@@ -1,0 +1,8 @@
+## YAML Template.
+name: Display
+main: display.Display
+version: 0.1
+commands:
+    display:
+        description: The main command to control the display
+        usage: /display [on/off/image/video]
