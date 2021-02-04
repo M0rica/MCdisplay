@@ -7,6 +7,7 @@ package display;
 
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.FileReader;
 import java.util.logging.Logger;
 import javax.imageio.ImageIO;
 import org.bukkit.Bukkit;
@@ -19,6 +20,10 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+
 /**
  *
  * @author Der Gerät
@@ -28,6 +33,13 @@ public class Display extends JavaPlugin{
     Logger log = this.getLogger();
     int w = 256;
     int h = 144;
+    
+    int videoFrame = 0;
+    Material[][][] video = null;
+    int pixelW = 0;
+    int pixelH = 0;
+    int videoID;
+    boolean videoPlays = false;
             
     public void onEnable(){
         log.info("Plugin enabled");
@@ -41,19 +53,35 @@ public class Display extends JavaPlugin{
     public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String[] args){
         if(cmd.getName().equalsIgnoreCase("display")){
             log.info(args[0]);
-            if(args[0].equals("on")){;
-                spawnDisplay();
-                return true;
-            } else if(args[0].equals("off")){
-                despawnDisplay();
-                return true;
-            } else if(args[0].equals("image")){
-                drawImage(args[1]);
-                return true;
-            }
-            else if(args[0].equals("resolution")){
-                changeResolution(args[1]);
-                return true;
+            switch (args[0]) {
+                case "on":
+                    spawnDisplay();
+                    return true;
+                case "off":
+                    despawnDisplay();
+                    return true;
+                case "image":
+                    drawImage(args[1]);
+                    return true;
+                case "resolution":
+                    changeResolution(args[1]);
+                    return true;
+                case "video":
+                    if(!videoPlays){
+                        videoPlays = true;
+                        changeResolution("128x72");
+                        Bukkit.broadcastMessage("Preparing video " + args[1]);
+                        Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable() {
+                            @Override
+                            public void run() {
+                                drawVideo(args[1]);
+                            }
+                        });
+                    } else {
+                        Bukkit.broadcastMessage("There is allready a video playing or in preparation!");
+                    }
+                default:
+                    break;
             }
         }
         return false;
@@ -99,11 +127,101 @@ public class Display extends JavaPlugin{
         }
     }
     
+    private void drawVideo(String path){
+        log.info(String.format("Start rendering video: %s", path));
+        Runtime rt = Runtime.getRuntime();
+        try{
+            log.info("Resizing video");
+            Process pr = rt.exec(String.format("python plugins/Display/resize.py plugins/Display/video/%s %dx%d", path, w, h));
+            int p = pr.waitFor();
+            log.info("Resized video");
+            JSONParser jsonParser = new JSONParser();
+            FileReader reader = new FileReader("plugins/Display/resized/video.json");
+            Object obj = jsonParser.parse(reader);
+            JSONObject data = (JSONObject) obj;
+            JSONArray pixels = (JSONArray) data.get("data");
+            long lframes = (long)data.get("frames");
+            int frames = Math.toIntExact(lframes);
+            video = new Material[frames][h][w];
+            pixels.forEach(i -> parseVideoArray((JSONArray)i));
+            //log.info(String.valueOf(pixels));
+            videoFrame = 0;
+            pixelW = 0;
+            pixelH = 0;
+            this.videoID = Bukkit.getScheduler().scheduleSyncRepeatingTask(this, new Runnable() {
+            @Override
+            public void run() {
+                renderVideoFrame();
+                if(videoFrame>=video.length){
+                    video = null;
+                    Bukkit.getServer().getScheduler().cancelTask(videoID);
+                    videoPlays = false;
+                    Bukkit.broadcastMessage("Video ended.");
+                }
+            }
+        }, 0L, 1L);
+        }
+        catch(Exception e){
+            e.printStackTrace();
+            log.info(String.format("Frame: %d, Width: %d, Height: %d", videoFrame, pixelW, pixelH));
+        }
+    }
+    
+    private void parseVideoArray(JSONArray pixels){
+        pixels.forEach(p -> parseVideoArray2((JSONArray)p));
+        videoFrame++;
+        pixelW = 0;
+        pixelH = 0;
+    }
+    
+    private void parseVideoArray2(JSONArray pixels){
+        pixelW = 0;
+        pixels.forEach(p -> createVideoArray((long)p));
+        pixelH++;
+    }
+    
+    public void createVideoArray(long lpixel){
+        int pixel = Math.toIntExact(lpixel);
+        Material m;
+        if(pixel <= 8000000){ //1841616
+            m = Material.WHITE_CONCRETE;
+        /*} else if(diff > 1036335 && diff < 2072670){
+            world.getBlockAt(i,10,j).setType(Material.ORANGE_CONCRETE);
+        } else if(diff > 2072670 && diff < 3109005){
+            world.getBlockAt(i,10,j).setType(Material.MAGENTA_CONCRETE);*/
+        } else if(pixel > 8000000 && pixel <= 9000000) { //8257152
+            m = Material.LIGHT_GRAY_CONCRETE;
+        } else if(pixel > 9000000 && pixel <= 12500000) { //8257152
+            m = Material.GRAY_CONCRETE;
+        } else {
+            m = Material.BLACK_CONCRETE;
+        }
+        video[videoFrame][pixelH][pixelW] = m;
+        pixelW++;
+    }
+    
+    
+    private void renderVideoFrame(){
+        long start = System.currentTimeMillis();
+        World world = Bukkit.getServer().getWorld("display_test");
+        Material[][] frame = video[videoFrame];
+        if(videoFrame<video.length){
+            for(int i=0; i<frame.length; i++){
+                for(int j=0; j<frame[0].length; j++){
+                    world.getBlockAt(j,10,i).setType(frame[i][j]);
+                }
+            }
+            videoFrame++;
+            log.info(String.format("Time taken for frame #%d: %dms", videoFrame, System.currentTimeMillis()-start));
+        }
+    }
+    
     private void renderImage(int[][] img){
         World world = Bukkit.getServer().getWorld("display_test");
         for(int i=0; i<img.length; i++){
             for (int j=0; j<img[0].length; j++){
-                int diff = Math.abs(img[i][j] * 1);
+                //int diff = Math.abs(img[i][j] * 1);
+                int diff = -img[i][j];
                 //log.info(String.valueOf(diff));
                 //max 16581375, 1/16 = 1036335
                 // orange = 21825 (226, 99, 0)
