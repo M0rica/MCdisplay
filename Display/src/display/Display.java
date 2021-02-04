@@ -40,6 +40,9 @@ public class Display extends JavaPlugin{
     int pixelH = 0;
     int videoID;
     boolean videoPlays = false;
+    boolean isPaused = false;
+    boolean isVideoPlaying = false;
+    String lastvid;
             
     public void onEnable(){
         log.info("Plugin enabled");
@@ -61,7 +64,20 @@ public class Display extends JavaPlugin{
                     despawnDisplay();
                     return true;
                 case "image":
+                    Bukkit.broadcastMessage("[Display] Rendering image " + args[1]);
                     drawImage(args[1]);
+                    return true;
+                case "pause":
+                    log.info(String.valueOf(isVideoPlaying));
+                    if(isVideoPlaying && !isPaused){
+                        isPaused = true;
+                    } else {
+                        isPaused = false;
+                    }
+                    return true;
+                case "stop":
+                    videoFrame = video.length;
+                    Bukkit.broadcastMessage("Stopped video");
                     return true;
                 case "resolution":
                     changeResolution(args[1]);
@@ -70,16 +86,32 @@ public class Display extends JavaPlugin{
                     if(!videoPlays){
                         videoPlays = true;
                         changeResolution("128x72");
-                        Bukkit.broadcastMessage("Preparing video " + args[1]);
+                        Bukkit.broadcastMessage("[Display] Preparing video " + args[1] + ", this may take a while (up to several minutes depending on the length of the video)!");
                         Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable() {
                             @Override
                             public void run() {
-                                drawVideo(args[1]);
+                                if(args[1].equals(lastvid)){
+                                    drawVideo(args[1], true);
+                                } else {
+                                    log.info("New Video");
+                                    lastvid = args[1];
+                                    drawVideo(args[1], false);
+                                }
                             }
                         });
                     } else {
-                        Bukkit.broadcastMessage("There is allready a video playing or in preparation!");
+                        Bukkit.broadcastMessage("[Display] There is allready a video playing or in preparation!");
                     }
+                    return true;
+                case "replay":
+                    Bukkit.broadcastMessage("[Display] Playing last video");
+                        Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable() {
+                            @Override
+                            public void run() {
+                                drawVideo("placeholder", true);
+                            }
+                        });
+                    return true;
                 default:
                     break;
             }
@@ -127,14 +159,16 @@ public class Display extends JavaPlugin{
         }
     }
     
-    private void drawVideo(String path){
-        log.info(String.format("Start rendering video: %s", path));
+    private void drawVideo(String path, boolean replay){
         Runtime rt = Runtime.getRuntime();
         try{
-            log.info("Resizing video");
-            Process pr = rt.exec(String.format("python plugins/Display/resize.py plugins/Display/video/%s %dx%d", path, w, h));
-            int p = pr.waitFor();
-            log.info("Resized video");
+            if(!replay){
+                log.info(String.format("Start rendering video: %s", path));
+                Process pr = rt.exec(String.format("python plugins/Display/resize.py plugins/Display/video/%s %dx%d", path, w, h));
+                int p = pr.waitFor();
+                log.info("Rendered video");
+            }
+            log.info("Reading video data");
             JSONParser jsonParser = new JSONParser();
             FileReader reader = new FileReader("plugins/Display/resized/video.json");
             Object obj = jsonParser.parse(reader);
@@ -142,21 +176,33 @@ public class Display extends JavaPlugin{
             JSONArray pixels = (JSONArray) data.get("data");
             long lframes = (long)data.get("frames");
             int frames = Math.toIntExact(lframes);
+            log.info(String.format("Number of Frames: %d", frames));
             video = new Material[frames][h][w];
             pixels.forEach(i -> parseVideoArray((JSONArray)i));
             //log.info(String.valueOf(pixels));
             videoFrame = 0;
             pixelW = 0;
             pixelH = 0;
+            isVideoPlaying = true;
             this.videoID = Bukkit.getScheduler().scheduleSyncRepeatingTask(this, new Runnable() {
             @Override
             public void run() {
-                renderVideoFrame();
-                if(videoFrame>=video.length){
-                    video = null;
-                    Bukkit.getServer().getScheduler().cancelTask(videoID);
-                    videoPlays = false;
-                    Bukkit.broadcastMessage("Video ended.");
+                //log.info(String.valueOf(isPaused));
+                if(!isPaused){
+                    try{
+                        renderVideoFrame();
+                    } catch (Exception e){
+                        e.printStackTrace();
+                        videoFrame = video.length;
+                    }
+                    if(videoFrame>=video.length){
+                        video = null;
+                        Bukkit.getServer().getScheduler().cancelTask(videoID);
+                        videoPlays = false;
+                        videoFrame = 0;
+                        isVideoPlaying = false;
+                        Bukkit.broadcastMessage("[Display] Done playing video");
+                    }
                 }
             }
         }, 0L, 1L);
@@ -182,7 +228,7 @@ public class Display extends JavaPlugin{
     
     public void createVideoArray(long lpixel){
         int pixel = Math.toIntExact(lpixel);
-        Material m;
+        Material m = Material.BLACK_CONCRETE;
         if(pixel <= 8000000){ //1841616
             m = Material.WHITE_CONCRETE;
         /*} else if(diff > 1036335 && diff < 2072670){
@@ -199,7 +245,6 @@ public class Display extends JavaPlugin{
         video[videoFrame][pixelH][pixelW] = m;
         pixelW++;
     }
-    
     
     private void renderVideoFrame(){
         long start = System.currentTimeMillis();
