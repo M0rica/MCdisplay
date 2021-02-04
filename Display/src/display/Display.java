@@ -253,7 +253,7 @@ public class Display extends JavaPlugin{
         if(videoFrame<video.length){
             for(int i=0; i<frame.length; i++){
                 for(int j=0; j<frame[0].length; j++){
-                    world.getBlockAt(j,10,i).setType(frame[i][j]);
+                    world.getBlockAt(j,h-i+5,0).setType(frame[i][j]);
                 }
             }
             videoFrame++;
