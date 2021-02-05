@@ -26,7 +26,7 @@ import org.json.simple.parser.JSONParser;
 
 /**
  *
- * @author Der Gerät
+ * @author M0rica
  */
 public class Display extends JavaPlugin{
     
@@ -42,6 +42,7 @@ public class Display extends JavaPlugin{
     boolean videoPlays = false;
     boolean isPaused = false;
     boolean isVideoPlaying = false;
+    boolean vertical = false;
     int lastW, lastH;
     String lastvid;
             
@@ -93,6 +94,10 @@ public class Display extends JavaPlugin{
                         if(w>256 || h>251){
                             changeResolution("256x144");
                         }
+                        if(!vertical){
+                            despawnDisplay();
+                            vertical = true;
+                        }
                         Bukkit.broadcastMessage("[Display] Preparing video " + args[1] + ", may take a while depending on the length of the video!");
                         Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable() {
                             @Override
@@ -117,6 +122,10 @@ public class Display extends JavaPlugin{
                         videoPlays = true;
                         if(w>256 || h>251){
                             changeResolution("256x144");
+                        }
+                        if(!vertical){
+                            despawnDisplay();
+                            vertical = true;
                         }
                         Bukkit.broadcastMessage("[Display] Playing last video");
                             Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable() {
@@ -153,35 +162,43 @@ public class Display extends JavaPlugin{
     }
     
     private void drawImage(String path){
-        log.info("Working directory: " + System.getProperty("user.dir"));
-        log.info(String.format("Start rendering new image: %s", path));
-        Runtime rt = Runtime.getRuntime();
-        try{
-            log.info("Resizing image");
-            Process pr = rt.exec(String.format("python plugins/Display/resize.py plugins/Display/image/%s %dx%d", path, w, h));
-            int p = pr.waitFor();
-            log.info("Reading resized image " + path);
-            File f = new File("plugins/Display/resized/" + path);
-            long start = System.currentTimeMillis();
-            BufferedImage img = ImageIO.read(f);
-            int[][] pixels = new int[w][h];
-            for(int i = 0; i < w; i++){
-                for(int j = 0; j < h; j++){
-                    pixels[i][j] = img.getRGB(i, j);
+        Bukkit.getScheduler().runTask(this, new Runnable(){
+            @Override
+            public void run(){
+                if(vertical){
+                    despawnDisplay();
+                    vertical = false;
+                }
+                log.info(String.format("Start rendering new image: %s", path));
+                Runtime rt = Runtime.getRuntime();
+                try{
+                    log.info("Resizing image");
+                    Process pr = rt.exec(String.format("python plugins/Display/resize.py plugins/Display/image/%s %dx%d", path, w, h));
+                    int p = pr.waitFor();
+                    log.info("Reading resized image " + path);
+                    File f = new File("plugins/Display/resized/" + path);
+                    long start = System.currentTimeMillis();
+                    BufferedImage img = ImageIO.read(f);
+                    int[][] pixels = new int[w][h];
+                    for(int i = 0; i < w; i++){
+                        for(int j = 0; j < h; j++){
+                            pixels[i][j] = img.getRGB(i, j);
+                        }
+                    }
+                    //log.info(String.valueOf(pixels[0][0]));
+                    //log.info(String.valueOf(pixels[23][4]));
+                    //log.info(String.valueOf(pixels[200][1]));
+                    //log.info(String.valueOf(pixels[69][12]));
+
+                    log.info(String.format("Rendering image %s to display", path));
+                    renderImage(pixels);
+                    log.info(String.format("Rendering time: %dms", System.currentTimeMillis() - start));
+                }
+                catch (Exception e){
+                    log.warning(String.valueOf(e));
                 }
             }
-            //log.info(String.valueOf(pixels[0][0]));
-            //log.info(String.valueOf(pixels[23][4]));
-            //log.info(String.valueOf(pixels[200][1]));
-            //log.info(String.valueOf(pixels[69][12]));
-            
-            log.info(String.format("Rendering image %s to display", path));
-            renderImage(pixels);
-            log.info(String.format("Rendering time: %dms", System.currentTimeMillis() - start));
-        }
-        catch (Exception e){
-            log.warning(String.valueOf(e));
-        }
+        });
     }
     
     private void drawVideo(String path, boolean replay){
@@ -189,7 +206,12 @@ public class Display extends JavaPlugin{
         try{
             if(!replay){
                 log.info(String.format("Start rendering video: %s", path));
-                Process pr = rt.exec(String.format("python plugins/Display/resize.py plugins/Display/video/%s %dx%d", path, w, h));
+                Process pr;
+                if(w*h<10000){
+                    pr = rt.exec(String.format("python plugins/Display/resize.py plugins/Display/video/%s %dx%d", path, w, h));
+                } else {
+                    pr = rt.exec(String.format("python plugins/Display/resize.py plugins/Display/video/%s %dx%d --fps 10", path, w, h));
+                }
                 int p = pr.waitFor();
                 log.info("Rendered video");
             }
@@ -201,6 +223,7 @@ public class Display extends JavaPlugin{
             long lframes = (long)data.get("frames");
             int frames = Math.toIntExact(lframes);
             log.info(String.format("Number of Frames: %d", frames));
+            reader.close();
             video = new Material[frames][h][w];
             path = path.split("\\.")[0];
             for(videoFrame = 0; videoFrame<frames; videoFrame++){
@@ -219,6 +242,10 @@ public class Display extends JavaPlugin{
             pixelW = 0;
             pixelH = 0;
             isVideoPlaying = true;
+            long ticks = 1L;
+            if(w*h>10000){
+                ticks = 2L;
+            }
             this.videoID = Bukkit.getScheduler().scheduleSyncRepeatingTask(this, new Runnable() {
             @Override
             public void run() {
@@ -240,7 +267,7 @@ public class Display extends JavaPlugin{
                     }
                 }
             }
-        }, 0L, 1L);
+        }, 0L, ticks);
         }
         catch(Exception e){
             e.printStackTrace();
@@ -277,11 +304,11 @@ public class Display extends JavaPlugin{
             world.getBlockAt(i,10,j).setType(Material.ORANGE_CONCRETE);
         } else if(diff > 2072670 && diff < 3109005){
             world.getBlockAt(i,10,j).setType(Material.MAGENTA_CONCRETE);*/
-        } else if(pixel > 8000000 && pixel <= 8600000) { //8257152
+        } else if(pixel > 8000000 && pixel <= 9000000) { //8257152
             m = Material.LIGHT_GRAY_CONCRETE;
-        } else if(pixel > 8600000 && pixel <= 9000000) { //8257152
+        } else if(pixel > 8800000 && pixel <= 9000000) { //8257152
                     m = Material.CYAN_CONCRETE;
-        } else if(pixel > 9000000 && pixel <= 12500000) { //8257152
+        } else if(pixel > 9000000 && pixel <= 14000000) { //8257152
             m = Material.GRAY_CONCRETE;
         } else {
             m = Material.BLACK_CONCRETE;
@@ -322,7 +349,7 @@ public class Display extends JavaPlugin{
                 //max 16581375, 1/16 = 1036335
                 // orange = 21825 (226, 99, 0)
                 // magenta = 1155453
-                Block block = world.getBlockAt(i,h-j+5,0);
+                Block block = world.getBlockAt(i,5,j);
                 Material m;
                 if(diff <= 8000000){ //1841616
                     m = Material.WHITE_CONCRETE;
@@ -330,11 +357,11 @@ public class Display extends JavaPlugin{
                     world.getBlockAt(i,10,j).setType(Material.ORANGE_CONCRETE);
                 } else if(diff > 2072670 && diff < 3109005){
                     world.getBlockAt(i,10,j).setType(Material.MAGENTA_CONCRETE);*/
-                } else if(diff > 8000000 && diff <= 8600000) { //8257152
+                } else if(diff > 8000000 && diff <= 9000000) { //8257152
                     m = Material.LIGHT_GRAY_CONCRETE;
                 } else if(diff > 8600000 && diff <= 9000000) { //8257152
                     m = Material.CYAN_CONCRETE;
-                } else if(diff > 9000000 && diff <= 12500000) { //8257152
+                } else if(diff > 9000000 && diff <= 14000000) { //8257152
                     m = Material.GRAY_CONCRETE;
                 } else {
                     m = Material.BLACK_CONCRETE;
@@ -352,9 +379,12 @@ public class Display extends JavaPlugin{
         for(int i=0; i<w; i++){
 
             for(int j=0; j<h; j++){
-
-                world.getBlockAt(i,h-j+5,0).setType(Material.BLACK_CONCRETE);
-
+                
+                if(vertical){
+                    world.getBlockAt(i,h-j+5,0).setType(Material.BLACK_CONCRETE);
+                } else {
+                    world.getBlockAt(i,5,j).setType(Material.BLACK_CONCRETE);
+                }
             }
             //log.info(String.format("Spawend row %d", i));
         }
@@ -368,8 +398,11 @@ public class Display extends JavaPlugin{
             
             for(int j=0; j<h; j++){
                 
-                world.getBlockAt(i,h-j+5,0).setType(Material.AIR);
-            
+                if(vertical){
+                    world.getBlockAt(i,h-j+5,0).setType(Material.AIR);
+                } else {
+                    world.getBlockAt(i,5,j).setType(Material.AIR);
+                }
             }
             //log.info(String.format("Despawend row %d", i));
         }
