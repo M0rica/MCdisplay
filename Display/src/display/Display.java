@@ -42,6 +42,7 @@ public class Display extends JavaPlugin{
     boolean videoPlays = false;
     boolean isPaused = false;
     boolean isVideoPlaying = false;
+    int lastW, lastH;
     String lastvid;
             
     public void onEnable(){
@@ -80,20 +81,28 @@ public class Display extends JavaPlugin{
                     Bukkit.broadcastMessage("Stopped video");
                     return true;
                 case "resolution":
-                    changeResolution(args[1]);
+                    if(!videoPlays){
+                        changeResolution(args[1]);
+                    } else {
+                        Bukkit.broadcastMessage("Can't change reolution while playing a video!");
+                    }
                     return true;
                 case "video":
                     if(!videoPlays){
                         videoPlays = true;
-                        changeResolution("128x72");
-                        Bukkit.broadcastMessage("[Display] Preparing video " + args[1] + ", this may take a while (up to several minutes depending on the length of the video)!");
+                        if(w>256 || h>251){
+                            changeResolution("256x144");
+                        }
+                        Bukkit.broadcastMessage("[Display] Preparing video " + args[1] + ", may take a while depending on the length of the video!");
                         Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable() {
                             @Override
                             public void run() {
-                                if(args[1].equals(lastvid)){
+                                if(args[1].equals(lastvid) && w == lastW && h == lastH){
                                     drawVideo(args[1], true);
                                 } else {
                                     log.info("New Video");
+                                    lastW = w;
+                                    lastH = h;
                                     lastvid = args[1];
                                     drawVideo(args[1], false);
                                 }
@@ -104,13 +113,29 @@ public class Display extends JavaPlugin{
                     }
                     return true;
                 case "replay":
-                    Bukkit.broadcastMessage("[Display] Playing last video");
-                        Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable() {
-                            @Override
-                            public void run() {
-                                drawVideo("placeholder", true);
-                            }
-                        });
+                    if(!lastvid.matches("") && !videoPlays){
+                        videoPlays = true;
+                        if(w>256 || h>251){
+                            changeResolution("256x144");
+                        }
+                        Bukkit.broadcastMessage("[Display] Playing last video");
+                            Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable() {
+                                @Override
+                                public void run() {
+                                    if(w == lastW && h == lastH){
+                                    drawVideo(lastvid, true);
+                                } else {
+                                    log.info("New Video");
+                                    lastW = w;
+                                    lastH = h;
+                                    lastvid = args[1];
+                                    drawVideo(lastvid, false);
+                                }
+                                }
+                            });
+                    } else{
+                        Bukkit.broadcastMessage("There is no last video to play!");
+                    }
                     return true;
                 default:
                     break;
@@ -173,13 +198,23 @@ public class Display extends JavaPlugin{
             FileReader reader = new FileReader("plugins/Display/resized/video.json");
             Object obj = jsonParser.parse(reader);
             JSONObject data = (JSONObject) obj;
-            JSONArray pixels = (JSONArray) data.get("data");
             long lframes = (long)data.get("frames");
             int frames = Math.toIntExact(lframes);
             log.info(String.format("Number of Frames: %d", frames));
             video = new Material[frames][h][w];
-            pixels.forEach(i -> parseVideoArray((JSONArray)i));
-            //log.info(String.valueOf(pixels));
+            path = path.split("\\.")[0];
+            for(videoFrame = 0; videoFrame<frames; videoFrame++){
+                File f = new File(String.format("plugins/Display/resized/%s_%d.jpg", path, videoFrame));
+                BufferedImage img = ImageIO.read(f);
+                for(pixelH = 0; pixelH<h; pixelH++){
+                    for(pixelW = 0; pixelW<w; pixelW++){
+                        createVideoArray(-img.getRGB(pixelW, pixelH));
+                        //log.info(String.valueOf(img.getRGB(pixelW, pixelH)));
+                        //log.info(String.valueOf(video[videoFrame][pixelH][pixelW]));
+                    }
+                }
+            }
+            //log.info(String.valueOf(video));
             videoFrame = 0;
             pixelW = 0;
             pixelH = 0;
@@ -210,24 +245,31 @@ public class Display extends JavaPlugin{
         catch(Exception e){
             e.printStackTrace();
             log.info(String.format("Frame: %d, Width: %d, Height: %d", videoFrame, pixelW, pixelH));
+            videoFrame = 0;
+            video = null;
+            pixelW = 0;
+            pixelH = 0;
+            videoPlays = false;
+            isPaused = false;
+            isVideoPlaying = false;
         }
     }
     
-    private void parseVideoArray(JSONArray pixels){
+    /*private void parseVideoArray(JSONArray pixels){
         pixels.forEach(p -> parseVideoArray2((JSONArray)p));
         videoFrame++;
         pixelW = 0;
         pixelH = 0;
-    }
+    }*/
     
-    private void parseVideoArray2(JSONArray pixels){
+    /*private void parseVideoArray2(JSONArray pixels){
         pixelW = 0;
         pixels.forEach(p -> createVideoArray((long)p));
         pixelH++;
-    }
+    }*/
     
-    public void createVideoArray(long lpixel){
-        int pixel = Math.toIntExact(lpixel);
+    public void createVideoArray(int pixel){
+        //int pixel = Math.toIntExact(lpixel);
         Material m = Material.BLACK_CONCRETE;
         if(pixel <= 8000000){ //1841616
             m = Material.WHITE_CONCRETE;
@@ -235,25 +277,34 @@ public class Display extends JavaPlugin{
             world.getBlockAt(i,10,j).setType(Material.ORANGE_CONCRETE);
         } else if(diff > 2072670 && diff < 3109005){
             world.getBlockAt(i,10,j).setType(Material.MAGENTA_CONCRETE);*/
-        } else if(pixel > 8000000 && pixel <= 9000000) { //8257152
+        } else if(pixel > 8000000 && pixel <= 8600000) { //8257152
             m = Material.LIGHT_GRAY_CONCRETE;
+        } else if(pixel > 8600000 && pixel <= 9000000) { //8257152
+                    m = Material.CYAN_CONCRETE;
         } else if(pixel > 9000000 && pixel <= 12500000) { //8257152
             m = Material.GRAY_CONCRETE;
         } else {
             m = Material.BLACK_CONCRETE;
         }
         video[videoFrame][pixelH][pixelW] = m;
-        pixelW++;
     }
     
     private void renderVideoFrame(){
         long start = System.currentTimeMillis();
         World world = Bukkit.getServer().getWorld("display_test");
         Material[][] frame = video[videoFrame];
+        Material blockmaterial;
+        Material newMaterial;
+        Block block;
         if(videoFrame<video.length){
             for(int i=0; i<frame.length; i++){
                 for(int j=0; j<frame[0].length; j++){
-                    world.getBlockAt(j,h-i+5,0).setType(frame[i][j]);
+                    block = world.getBlockAt(j,h-i+5,0);
+                    blockmaterial = block.getType();
+                    newMaterial = frame[i][j];
+                    if(newMaterial != blockmaterial){
+                        block.setType(newMaterial);
+                    }
                 }
             }
             videoFrame++;
@@ -271,7 +322,7 @@ public class Display extends JavaPlugin{
                 //max 16581375, 1/16 = 1036335
                 // orange = 21825 (226, 99, 0)
                 // magenta = 1155453
-                Block block = world.getBlockAt(i,10,j);
+                Block block = world.getBlockAt(i,h-j+5,0);
                 Material m;
                 if(diff <= 8000000){ //1841616
                     m = Material.WHITE_CONCRETE;
@@ -279,8 +330,10 @@ public class Display extends JavaPlugin{
                     world.getBlockAt(i,10,j).setType(Material.ORANGE_CONCRETE);
                 } else if(diff > 2072670 && diff < 3109005){
                     world.getBlockAt(i,10,j).setType(Material.MAGENTA_CONCRETE);*/
-                } else if(diff > 8000000 && diff <= 9000000) { //8257152
+                } else if(diff > 8000000 && diff <= 8600000) { //8257152
                     m = Material.LIGHT_GRAY_CONCRETE;
+                } else if(diff > 8600000 && diff <= 9000000) { //8257152
+                    m = Material.CYAN_CONCRETE;
                 } else if(diff > 9000000 && diff <= 12500000) { //8257152
                     m = Material.GRAY_CONCRETE;
                 } else {
@@ -300,7 +353,7 @@ public class Display extends JavaPlugin{
 
             for(int j=0; j<h; j++){
 
-                world.getBlockAt(i,10,j).setType(Material.BLACK_CONCRETE);
+                world.getBlockAt(i,h-j+5,0).setType(Material.BLACK_CONCRETE);
 
             }
             //log.info(String.format("Spawend row %d", i));
@@ -315,7 +368,7 @@ public class Display extends JavaPlugin{
             
             for(int j=0; j<h; j++){
                 
-                world.getBlockAt(i,10,j).setType(Material.AIR);
+                world.getBlockAt(i,h-j+5,0).setType(Material.AIR);
             
             }
             //log.info(String.format("Despawend row %d", i));
