@@ -27,12 +27,20 @@ def resize_video(path: str, resolution: tuple):
     data_list = []
     frames = 0
 
-    #output_video = cv2.VideoWriter(f'plugins/Display/resized/{path.split("/")[-1]}', 0, 20, resolution)
+    output_video = cv2.VideoWriter(f'plugins/Display/resized/{path.split("/")[-1]}', 0, 20, resolution)
+
     while success:
         img = resize_image(Image.fromarray(img), resolution)
         img = np.asarray(img)
-        #output_video.write(img)
-        img_list = img.tolist()
+        output_video.write(img)
+        success, img = vidcap.read()
+    cv2.destroyAllWindows()
+    output_video.release()
+
+    vidcap = cv2.VideoCapture(f'plugins/Display/resized/{path.split("/")[-1]}')
+    success, img = vidcap.read()
+    while success:
+        '''img_list = img.tolist()
         frame = []
         #print(len(img_list), len(img_list[0]))
         for i in range(0, len(img_list)):
@@ -43,9 +51,11 @@ def resize_video(path: str, resolution: tuple):
             frame.append(line)
         frames += 1
 
-        data_list.append(frame)
+        data_list.append(frame)'''
+        img = Image.fromarray(img)
+        img.save(f'plugins/Display/resized/{path.split("/")[-1].split(".")[0]}_{frames}.jpg')
 
-
+        frames += 1
         success, img = vidcap.read()
     
     #cv2.destroyAllWindows()
@@ -53,8 +63,8 @@ def resize_video(path: str, resolution: tuple):
     #print(data_list[0])
 
     save_data = {
-        'frames': frames,
-        'data': data_list
+        'frames': frames
+        #'data': data_list
     }
     with open('plugins/Display/resized/video.json', 'w') as f:
         json.dump(save_data, f, indent=4)
