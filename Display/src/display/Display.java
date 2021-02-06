@@ -9,6 +9,7 @@ import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 import java.io.File;
 import java.io.FileReader;
+import java.util.ArrayList;
 import java.util.logging.Logger;
 import javax.imageio.ImageIO;
 import org.bukkit.Bukkit;
@@ -71,8 +72,12 @@ public class Display extends JavaPlugin{
                     despawnDisplay();
                     return true;
                 case "image":
-                    Bukkit.broadcastMessage("[Display] Rendering image " + args[1]);
-                    drawImage(args[1]);
+                    if(!videoPlays){
+                        Bukkit.broadcastMessage("[Display] Rendering image " + args[1]);
+                        drawImage(args[1]);
+                    } else {
+                        Bukkit.broadcastMessage("There is a video playing or rendering, you can't render an image right now!");
+                    }
                     return true;
                 case "pause":
                     log.info(String.valueOf(isVideoPlaying));
@@ -233,30 +238,38 @@ public class Display extends JavaPlugin{
                 path = path.split("\\.")[0];
                 int width, height;
                 float[] rgb = new float[3];
+                ArrayList<BufferedImage> images = new ArrayList<BufferedImage>();
                 for(videoFrame = 0; videoFrame<frames; videoFrame++){
                     File f = new File(String.format("plugins/Display/resized/%s_%d.jpg", path, videoFrame));
-                    BufferedImage img = ImageIO.read(f);
+                    images.add(ImageIO.read(f));
+                }
+                BufferedImage img;
+                for(videoFrame = 0; videoFrame<frames; videoFrame++){
+                    img = images.get(0);
+                    images.remove(0);
                     byte[] pixels = ((DataBufferByte) img.getRaster().getDataBuffer()).getData();
                     width = img.getWidth();
                     height = img.getHeight();
-                    for(int pixel = 0, pixelH = 0, pixelW = 0; pixel+2<pixels.length; pixel+=3){
+                    pixelH = 0;
+                    pixelW = 0;
+                    for(int pixel = 0; pixel+2<pixels.length; pixel+=3){
                         rgb[0] = (float) (pixels[pixel] & 0xff);
                         rgb[1] = (float) (pixels[pixel+1] & 0xff);
                         rgb[2] = (float) (pixels[pixel+2] & 0xff);
                         createVideoArray(rgb);
                         pixelW++;
-                        if(pixelH == height){
+                        if(pixelW == width){
                             pixelW = 0;
                             pixelH++;
                         }
                     }
                     if(videoFrame % 100 == 0){
-                        log.info(String.format("Redered frame %d", videoFrame));
+                        log.info(String.format("Rendered frame %d", videoFrame));
                     }
                 }
                 log.info(String.format("Time taken for rendering internally: %d", System.currentTimeMillis() - start));
             }
-            //log.info(String.valueOf(video));
+            //log.info(String.valueOf(video[0][0][0]));
             videoFrame = 0;
             pixelW = 0;
             pixelH = 0;
@@ -305,6 +318,9 @@ public class Display extends JavaPlugin{
     public void createVideoArray(float[] pixel){
         //int pixel = Math.toIntExact(lpixel);
         Material m = colormap.matchColor(pixel);
+        if(m == null){
+            log.info("No Material!");
+        }
         /*if(pixel <= 8000000){ //1841616
             m = Material.WHITE_CONCRETE;
         } else if(diff > 1036335 && diff < 2072670){
@@ -328,7 +344,7 @@ public class Display extends JavaPlugin{
         World world = Bukkit.getServer().getWorld("display_test");
         Material[][] frame = video[videoFrame];
         Material blockmaterial;
-        Material newMaterial;
+        Material newMaterial = Material.BLACK_CONCRETE;
         Block block;
         if(videoFrame<video.length){
             for(int i=0; i<frame.length; i++){
@@ -336,6 +352,8 @@ public class Display extends JavaPlugin{
                     block = world.getBlockAt(j,h-i+5,0);
                     blockmaterial = block.getType();
                     newMaterial = frame[i][j];
+                    //log.info(String.valueOf(newMaterial == null));
+                    //log.info(newMaterial.toString());
                     if(newMaterial != blockmaterial){
                         block.setType(newMaterial);
                     }
