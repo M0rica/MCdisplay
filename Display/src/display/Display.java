@@ -45,8 +45,11 @@ public class Display extends JavaPlugin{
     boolean vertical = false;
     int lastW, lastH;
     String lastvid;
+    
+    BlockColor colormap;
             
     public void onEnable(){
+        colormap = new BlockColor();
         log.info("Plugin enabled");
     }
     
@@ -346,17 +349,18 @@ public class Display extends JavaPlugin{
                 //int diff = Math.abs(img[i][j] * 1);
                 int diff = -img[i][j];
                 //log.info(String.valueOf(diff));
+                //log.info(String.valueOf(diff));
                 //max 16581375, 1/16 = 1036335
                 // orange = 21825 (226, 99, 0)
                 // magenta = 1155453
                 Block block = world.getBlockAt(i,5,j);
                 Material m;
-                if(diff <= 8000000){ //1841616
+                /*if(diff <= 8000000){ //1841616
                     m = Material.WHITE_CONCRETE;
                 /*} else if(diff > 1036335 && diff < 2072670){
                     world.getBlockAt(i,10,j).setType(Material.ORANGE_CONCRETE);
                 } else if(diff > 2072670 && diff < 3109005){
-                    world.getBlockAt(i,10,j).setType(Material.MAGENTA_CONCRETE);*/
+                    world.getBlockAt(i,10,j).setType(Material.MAGENTA_CONCRETE);
                 } else if(diff > 8000000 && diff <= 9000000) { //8257152
                     m = Material.LIGHT_GRAY_CONCRETE;
                 } else if(diff > 8600000 && diff <= 9000000) { //8257152
@@ -365,7 +369,8 @@ public class Display extends JavaPlugin{
                     m = Material.GRAY_CONCRETE;
                 } else {
                     m = Material.BLACK_CONCRETE;
-                }
+                }*/
+                m = colormap.matchColor(diff);
                 if (m != block.getType()){
                     block.setType(m);
                 }
