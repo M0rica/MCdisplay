@@ -6,6 +6,7 @@
 package display;
 
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferByte;
 import java.io.File;
 import java.io.FileReader;
 import java.util.logging.Logger;
@@ -35,6 +36,7 @@ public class Display extends JavaPlugin{
     int h = 144;
     
     int videoFrame = 0;
+    int frames = 0;
     Material[][][] video = null;
     int pixelW = 0;
     int pixelH = 0;
@@ -217,28 +219,42 @@ public class Display extends JavaPlugin{
                 }
                 int p = pr.waitFor();
                 log.info("Rendered video");
-            }
-            log.info("Reading video data");
-            JSONParser jsonParser = new JSONParser();
-            FileReader reader = new FileReader("plugins/Display/resized/video.json");
-            Object obj = jsonParser.parse(reader);
-            JSONObject data = (JSONObject) obj;
-            long lframes = (long)data.get("frames");
-            int frames = Math.toIntExact(lframes);
-            log.info(String.format("Number of Frames: %d", frames));
-            reader.close();
-            video = new Material[frames][h][w];
-            path = path.split("\\.")[0];
-            for(videoFrame = 0; videoFrame<frames; videoFrame++){
-                File f = new File(String.format("plugins/Display/resized/%s_%d.jpg", path, videoFrame));
-                BufferedImage img = ImageIO.read(f);
-                for(pixelH = 0; pixelH<h; pixelH++){
-                    for(pixelW = 0; pixelW<w; pixelW++){
-                        createVideoArray(-img.getRGB(pixelW, pixelH));
-                        //log.info(String.valueOf(img.getRGB(pixelW, pixelH)));
-                        //log.info(String.valueOf(video[videoFrame][pixelH][pixelW]));
+                log.info("Reading video data");
+                JSONParser jsonParser = new JSONParser();
+                FileReader reader = new FileReader("plugins/Display/resized/video.json");
+                Object obj = jsonParser.parse(reader);
+                JSONObject data = (JSONObject) obj;
+                long lframes = (long)data.get("frames");
+                frames = Math.toIntExact(lframes);
+                log.info(String.format("Number of Frames: %d", frames));
+                reader.close();
+                long start = System.currentTimeMillis();
+                video = new Material[frames][h][w];
+                path = path.split("\\.")[0];
+                int width, height;
+                float[] rgb = new float[3];
+                for(videoFrame = 0; videoFrame<frames; videoFrame++){
+                    File f = new File(String.format("plugins/Display/resized/%s_%d.jpg", path, videoFrame));
+                    BufferedImage img = ImageIO.read(f);
+                    byte[] pixels = ((DataBufferByte) img.getRaster().getDataBuffer()).getData();
+                    width = img.getWidth();
+                    height = img.getHeight();
+                    for(int pixel = 0, pixelH = 0, pixelW = 0; pixel+2<pixels.length; pixel+=3){
+                        rgb[0] = (float) (pixels[pixel] & 0xff);
+                        rgb[1] = (float) (pixels[pixel+1] & 0xff);
+                        rgb[2] = (float) (pixels[pixel+2] & 0xff);
+                        createVideoArray(rgb);
+                        pixelW++;
+                        if(pixelH == height){
+                            pixelW = 0;
+                            pixelH++;
+                        }
+                    }
+                    if(videoFrame % 100 == 0){
+                        log.info(String.format("Redered frame %d", videoFrame));
                     }
                 }
+                log.info(String.format("Time taken for rendering internally: %d", System.currentTimeMillis() - start));
             }
             //log.info(String.valueOf(video));
             videoFrame = 0;
@@ -261,7 +277,7 @@ public class Display extends JavaPlugin{
                         videoFrame = video.length;
                     }
                     if(videoFrame>=video.length){
-                        video = null;
+                        //video = null;
                         Bukkit.getServer().getScheduler().cancelTask(videoID);
                         videoPlays = false;
                         videoFrame = 0;
@@ -285,28 +301,16 @@ public class Display extends JavaPlugin{
         }
     }
     
-    /*private void parseVideoArray(JSONArray pixels){
-        pixels.forEach(p -> parseVideoArray2((JSONArray)p));
-        videoFrame++;
-        pixelW = 0;
-        pixelH = 0;
-    }*/
     
-    /*private void parseVideoArray2(JSONArray pixels){
-        pixelW = 0;
-        pixels.forEach(p -> createVideoArray((long)p));
-        pixelH++;
-    }*/
-    
-    public void createVideoArray(int pixel){
+    public void createVideoArray(float[] pixel){
         //int pixel = Math.toIntExact(lpixel);
-        Material m = Material.BLACK_CONCRETE;
-        if(pixel <= 8000000){ //1841616
+        Material m = colormap.matchColor(pixel);
+        /*if(pixel <= 8000000){ //1841616
             m = Material.WHITE_CONCRETE;
-        /*} else if(diff > 1036335 && diff < 2072670){
+        } else if(diff > 1036335 && diff < 2072670){
             world.getBlockAt(i,10,j).setType(Material.ORANGE_CONCRETE);
         } else if(diff > 2072670 && diff < 3109005){
-            world.getBlockAt(i,10,j).setType(Material.MAGENTA_CONCRETE);*/
+            world.getBlockAt(i,10,j).setType(Material.MAGENTA_CONCRETE);
         } else if(pixel > 8000000 && pixel <= 9000000) { //8257152
             m = Material.LIGHT_GRAY_CONCRETE;
         } else if(pixel > 8800000 && pixel <= 9000000) { //8257152
@@ -315,7 +319,7 @@ public class Display extends JavaPlugin{
             m = Material.GRAY_CONCRETE;
         } else {
             m = Material.BLACK_CONCRETE;
-        }
+        }*/
         video[videoFrame][pixelH][pixelW] = m;
     }
     
@@ -346,30 +350,9 @@ public class Display extends JavaPlugin{
         World world = Bukkit.getServer().getWorld("display_test");
         for(int i=0; i<img.length; i++){
             for (int j=0; j<img[0].length; j++){
-                //int diff = Math.abs(img[i][j] * 1);
                 int diff = -img[i][j];
-                //log.info(String.valueOf(diff));
-                //log.info(String.valueOf(diff));
-                //max 16581375, 1/16 = 1036335
-                // orange = 21825 (226, 99, 0)
-                // magenta = 1155453
                 Block block = world.getBlockAt(i,5,j);
                 Material m;
-                /*if(diff <= 8000000){ //1841616
-                    m = Material.WHITE_CONCRETE;
-                /*} else if(diff > 1036335 && diff < 2072670){
-                    world.getBlockAt(i,10,j).setType(Material.ORANGE_CONCRETE);
-                } else if(diff > 2072670 && diff < 3109005){
-                    world.getBlockAt(i,10,j).setType(Material.MAGENTA_CONCRETE);
-                } else if(diff > 8000000 && diff <= 9000000) { //8257152
-                    m = Material.LIGHT_GRAY_CONCRETE;
-                } else if(diff > 8600000 && diff <= 9000000) { //8257152
-                    m = Material.CYAN_CONCRETE;
-                } else if(diff > 9000000 && diff <= 14000000) { //8257152
-                    m = Material.GRAY_CONCRETE;
-                } else {
-                    m = Material.BLACK_CONCRETE;
-                }*/
                 m = colormap.matchColor(diff);
                 if (m != block.getType()){
                     block.setType(m);
