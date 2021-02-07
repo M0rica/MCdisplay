@@ -1,8 +1,11 @@
 ## YAML Template.
-name: Display
+name: MCdisplay
 main: display.Display
-version: 0.1
+version: 0.3.1
+api-version: 1.16
+author: M0rica
+website: https://github.com/M0rica/MCdisplay
 commands:
     display:
-        description: The main command to control the display
-        usage: /display [on/off/image/video]
+        description:
+        usage: "Usage: /display [on/off/image/video/replay/pause/stop]"

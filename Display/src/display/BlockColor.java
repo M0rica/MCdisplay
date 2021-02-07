@@ -19,10 +19,10 @@ public class BlockColor{
     
         Material material;
         int color;
-        int red, green, blue;
+        float red, green, blue;
         float[] color_lab;
     
-        private ColorBlock(Material m, int r, int g, int b){
+        private ColorBlock(Material m, float r, float g, float b){
             material = m;
             if(r == 0){
                 r = 1;
@@ -40,31 +40,36 @@ public class BlockColor{
         }
     }
     
-    ArrayList<ColorBlock> blocks = new ArrayList<ColorBlock>();
+    ColorBlock[] blocks;
+    Material lastMaterial = Material.BLACK_CONCRETE;
+    float lastR, lastG, lastB = 0;
     CIELab colorConv = new CIELab();
     
     public BlockColor(){
         
+        //lastBlock = new ColorBlock(Material.BLACK_CONCRETE, 50, 50, 50);
         //blocks.add(new ColorBlock(Material., 0, 0, 0));
         // Concrete
-        blocks.add(new ColorBlock(Material.WHITE_CONCRETE, 240, 231, 231));
-        blocks.add(new ColorBlock(Material.ORANGE_CONCRETE, 233, 96, 0));
-        blocks.add(new ColorBlock(Material.MAGENTA_CONCRETE, 170, 45, 160));
-        blocks.add(new ColorBlock(Material.LIGHT_BLUE_CONCRETE, 30, 137, 199));
-        blocks.add(new ColorBlock(Material.YELLOW_CONCRETE, 243, 178, 15));
-        blocks.add(new ColorBlock(Material.LIME_CONCRETE, 93, 168, 16));
-        blocks.add(new ColorBlock(Material.PINK_CONCRETE, 214, 100, 143));
-        blocks.add(new ColorBlock(Material.GRAY_CONCRETE, 55, 55, 55));
-        blocks.add(new ColorBlock(Material.LIGHT_GRAY_CONCRETE, 125, 125, 115));
-        blocks.add(new ColorBlock(Material.CYAN_CONCRETE, 15, 121, 138));
-        blocks.add(new ColorBlock(Material.PURPLE_CONCRETE, 100, 25, 157));
-        blocks.add(new ColorBlock(Material.BLUE_CONCRETE, 42, 45, 145));
-        blocks.add(new ColorBlock(Material.BROWN_CONCRETE, 97, 58, 26));
-        blocks.add(new ColorBlock(Material.GREEN_CONCRETE, 72, 91, 31));
-        blocks.add(new ColorBlock(Material.RED_CONCRETE, 144, 30, 30));
-        blocks.add(new ColorBlock(Material.BLACK_CONCRETE, 50, 50, 50));
+        blocks = new ColorBlock[]{
+        new ColorBlock(Material.WHITE_CONCRETE, 240, 232, 232),
+        new ColorBlock(Material.ORANGE_CONCRETE, 233, 96, 0),
+        new ColorBlock(Material.MAGENTA_CONCRETE, 170, 45, 160),
+        new ColorBlock(Material.LIGHT_BLUE_CONCRETE, 30, 137, 199),
+        new ColorBlock(Material.YELLOW_CONCRETE, 243, 178, 15),
+        new ColorBlock(Material.LIME_CONCRETE, 93, 168, 16),
+        new ColorBlock(Material.PINK_CONCRETE, 214, 100, 143),
+        new ColorBlock(Material.GRAY_CONCRETE, 55, 55, 55),
+        new ColorBlock(Material.LIGHT_GRAY_CONCRETE, 125, 125, 115),
+        new ColorBlock(Material.CYAN_CONCRETE, 15, 121, 138),
+        new ColorBlock(Material.PURPLE_CONCRETE, 100, 25, 157),
+        new ColorBlock(Material.BLUE_CONCRETE, 42, 45, 145),
+        new ColorBlock(Material.BROWN_CONCRETE, 97, 58, 26),
+        new ColorBlock(Material.GREEN_CONCRETE, 72, 91, 31),
+        new ColorBlock(Material.RED_CONCRETE, 144, 30, 30),
+        new ColorBlock(Material.BLACK_CONCRETE, 50, 50, 50),
         
-        blocks.add(new ColorBlock(Material.STONE, 119, 119, 119));
+        new ColorBlock(Material.STONE, 119, 119, 119),
+        };
     }
     
     public Material matchColor(float[] color){
@@ -75,7 +80,11 @@ public class BlockColor{
         float r = color[0];
         float g = color[1];
         float b = color[2];
-          
+        
+        if(r == lastR && g == lastG && b == lastB){
+            return lastMaterial;
+        }
+        
         if(r == 0){
             r = 1;
         }
@@ -96,9 +105,15 @@ public class BlockColor{
             if(temp_diff < difference){
                 matchedMaterial = cb.material;
                 difference = temp_diff;
+            } if(temp_diff == 0){
+                break;
             }
         }
         
+        lastMaterial = matchedMaterial;
+        lastR = r;
+        lastG = g;
+        lastB = b;
         return matchedMaterial;
     }
     public Material matchColor(int color){
@@ -127,6 +142,9 @@ public class BlockColor{
             if(temp_diff < difference){
                 matchedMaterial = cb.material;
                 difference = temp_diff;
+            }
+            if(temp_diff == 0){
+                break;
             }
         }
         

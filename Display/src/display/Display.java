@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.logging.Logger;
 import javax.imageio.ImageIO;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Server;
@@ -20,6 +21,7 @@ import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.TabExecutor;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import org.json.simple.JSONArray;
@@ -30,6 +32,7 @@ import org.json.simple.parser.JSONParser;
  *
  * @author M0rica
  */
+
 public class Display extends JavaPlugin{
     
     Logger log = this.getLogger();
@@ -53,6 +56,9 @@ public class Display extends JavaPlugin{
             
     public void onEnable(){
         colormap = new BlockColor();
+        TabExecutor tabExecutor = new DisplayTabExecuter(this);
+        this.getCommand("display").setExecutor(tabExecutor);
+        this.getCommand("display").setTabCompleter(tabExecutor);
         log.info("Plugin enabled");
     }
     
@@ -61,70 +67,83 @@ public class Display extends JavaPlugin{
         log.info("Plugin disabled");
     }
     
-    public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String[] args){
+    public boolean processCommand(CommandSender sender, Command cmd, String commandLabel, String[] args){
         if(cmd.getName().equalsIgnoreCase("display")){
             log.info(args[0]);
             switch (args[0]) {
                 case "on":
                     spawnDisplay();
+                    broadcastMsg("Turned display on!");
                     return true;
                 case "off":
                     despawnDisplay();
+                    broadcastMsg("Turned display off!");
                     return true;
                 case "image":
-                    if(!videoPlays){
-                        Bukkit.broadcastMessage("[Display] Rendering image " + args[1]);
-                        drawImage(args[1]);
+                    if(doesFileExists("image/" + args[1])){
+                        if(!videoPlays){
+                            broadcastMsg("Rendering image " + args[1]);
+                            drawImage(args[1]);
+                        } else {
+                            broadcastErr("There is a video playing or rendering, you can't render an image right now!");
+                        }
                     } else {
-                        Bukkit.broadcastMessage("There is a video playing or rendering, you can't render an image right now!");
+                        broadcastErr(String.format("The file %s does not exist!", args[1]));
                     }
                     return true;
                 case "pause":
                     log.info(String.valueOf(isVideoPlaying));
                     if(isVideoPlaying && !isPaused){
                         isPaused = true;
+                        broadcastMsg("Video paused");
                     } else {
                         isPaused = false;
+                        broadcastMsg("Video resumed");
                     }
                     return true;
                 case "stop":
                     videoFrame = video.length;
-                    Bukkit.broadcastMessage("Stopped video");
+                    broadcastMsg("Stopped video");
                     return true;
                 case "resolution":
                     if(!videoPlays){
                         changeResolution(args[1]);
                     } else {
-                        Bukkit.broadcastMessage("Can't change reolution while playing a video!");
+                        broadcastErr("Can't change reolution while playing a video!");
                     }
+                    broadcastMsg("Successfully changed resolution to " + args[1] + "!");
                     return true;
                 case "video":
-                    if(!videoPlays){
-                        videoPlays = true;
-                        if(w>256 || h>251){
-                            changeResolution("256x144");
-                        }
-                        if(!vertical){
-                            despawnDisplay();
-                            vertical = true;
-                        }
-                        Bukkit.broadcastMessage("[Display] Preparing video " + args[1] + ", may take a while depending on the length of the video!");
-                        Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable() {
-                            @Override
-                            public void run() {
-                                if(args[1].equals(lastvid) && w == lastW && h == lastH){
-                                    drawVideo(args[1], true);
-                                } else {
-                                    log.info("New Video");
-                                    lastW = w;
-                                    lastH = h;
-                                    lastvid = args[1];
-                                    drawVideo(args[1], false);
-                                }
+                    if(doesFileExists("video/" + args[1])){
+                        if(!videoPlays){
+                            videoPlays = true;
+                            if(w>256 || h>251){
+                                changeResolution("256x144");
                             }
-                        });
+                            if(!vertical){
+                                despawnDisplay();
+                                vertical = true;
+                            }
+                            broadcastMsg("Preparing video " + args[1] + ", may take a while!");
+                            Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable() {
+                                @Override
+                                public void run() {
+                                    if(args[1].equals(lastvid) && w == lastW && h == lastH){
+                                        drawVideo(args[1], true);
+                                    } else {
+                                        log.info("New Video");
+                                        lastW = w;
+                                        lastH = h;
+                                        lastvid = args[1];
+                                        drawVideo(args[1], false);
+                                    }
+                                }
+                            });
+                        } else {
+                            broadcastErr("There is allready a video playing or in preparation!");
+                        }
                     } else {
-                        Bukkit.broadcastMessage("[Display] There is allready a video playing or in preparation!");
+                        broadcastErr(String.format("The file %s does not exist!", args[1]));
                     }
                     return true;
                 case "replay":
@@ -137,7 +156,7 @@ public class Display extends JavaPlugin{
                             despawnDisplay();
                             vertical = true;
                         }
-                        Bukkit.broadcastMessage("[Display] Playing last video");
+                        broadcastMsg("Playing last video");
                             Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable() {
                                 @Override
                                 public void run() {
@@ -153,7 +172,7 @@ public class Display extends JavaPlugin{
                                 }
                             });
                     } else{
-                        Bukkit.broadcastMessage("There is no last video to play!");
+                        broadcastErr("There is no last video to play!");
                     }
                     return true;
                 default:
@@ -161,6 +180,28 @@ public class Display extends JavaPlugin{
             }
         }
         return false;
+    }
+    
+    private boolean doesFileExists(String file){
+        return new File(String.format("plugins/MCdisplay/%s", file)).isFile();
+    }
+    
+    private void broadcastMsg(String msg){
+        Bukkit.getScheduler().runTask(this, new Runnable(){
+            @Override
+            public void run(){
+                Bukkit.broadcastMessage(ChatColor.DARK_PURPLE + "[Display] " + ChatColor.LIGHT_PURPLE + msg);
+            }
+        });
+    }
+    
+    private void broadcastErr(String msg){
+        Bukkit.getScheduler().runTask(this, new Runnable(){
+            @Override
+            public void run(){
+                Bukkit.broadcastMessage(ChatColor.DARK_RED + "[Display] " + ChatColor.RED + msg);
+            }
+        });
     }
     
     private void changeResolution(String res){
@@ -172,22 +213,22 @@ public class Display extends JavaPlugin{
     }
     
     private void drawImage(String path){
-        Bukkit.getScheduler().runTask(this, new Runnable(){
+        Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable(){
             @Override
             public void run(){
                 if(vertical){
                     despawnDisplay();
                     vertical = false;
                 }
+                long start = System.currentTimeMillis();
                 log.info(String.format("Start rendering new image: %s", path));
                 Runtime rt = Runtime.getRuntime();
                 try{
                     log.info("Resizing image");
-                    Process pr = rt.exec(String.format("python plugins/Display/resize.py plugins/Display/image/%s %dx%d", path, w, h));
+                    Process pr = rt.exec(String.format("python plugins/MCdisplay/resize.py plugins/MCdisplay/image/%s %dx%d", path, w, h));
                     int p = pr.waitFor();
                     log.info("Reading resized image " + path);
-                    File f = new File("plugins/Display/resized/" + path);
-                    long start = System.currentTimeMillis();
+                    File f = new File("plugins/MCdisplay/resized/" + path);
                     BufferedImage img = ImageIO.read(f);
                     int[][] pixels = new int[w][h];
                     for(int i = 0; i < w; i++){
@@ -203,6 +244,7 @@ public class Display extends JavaPlugin{
                     log.info(String.format("Rendering image %s to display", path));
                     renderImage(pixels);
                     log.info(String.format("Rendering time: %dms", System.currentTimeMillis() - start));
+                    broadcastMsg(String.format("Rendered image in: %ds", (System.currentTimeMillis() - start)/1000));
                 }
                 catch (Exception e){
                     log.warning(String.valueOf(e));
@@ -216,6 +258,7 @@ public class Display extends JavaPlugin{
         try{
             if(!replay){
                 log.info(String.format("Start rendering video: %s", path));
+                broadcastMsg(String.format("Start rendering video: %s", path));
                 Process pr;
                 if(w*h<10000){
                     pr = rt.exec(String.format("python plugins/Display/resize.py plugins/Display/video/%s %dx%d", path, w, h));
@@ -224,6 +267,7 @@ public class Display extends JavaPlugin{
                 }
                 int p = pr.waitFor();
                 log.info("Rendered video");
+                broadcastMsg("Rendered video");
                 log.info("Reading video data");
                 JSONParser jsonParser = new JSONParser();
                 FileReader reader = new FileReader("plugins/Display/resized/video.json");
@@ -232,21 +276,26 @@ public class Display extends JavaPlugin{
                 long lframes = (long)data.get("frames");
                 frames = Math.toIntExact(lframes);
                 log.info(String.format("Number of Frames: %d", frames));
+                broadcastMsg(String.format("Number of Frames: %d", frames));
                 reader.close();
                 long start = System.currentTimeMillis();
                 video = new Material[frames][h][w];
                 path = path.split("\\.")[0];
                 int width, height;
                 float[] rgb = new float[3];
-                ArrayList<BufferedImage> images = new ArrayList<BufferedImage>();
+                /*ArrayList<BufferedImage> images = new ArrayList<BufferedImage>();
                 for(videoFrame = 0; videoFrame<frames; videoFrame++){
                     File f = new File(String.format("plugins/Display/resized/%s_%d.jpg", path, videoFrame));
                     images.add(ImageIO.read(f));
-                }
+                }*/
                 BufferedImage img;
+                File f;
+                broadcastMsg("Colormapping frames...");
                 for(videoFrame = 0; videoFrame<frames; videoFrame++){
-                    img = images.get(0);
-                    images.remove(0);
+                    f = new File(String.format("plugins/Display/resized/%s_%d.jpg", path, videoFrame));
+                    img = ImageIO.read(f);
+                    //img = images.get(videoFrame);
+                    //images.remove(0);
                     byte[] pixels = ((DataBufferByte) img.getRaster().getDataBuffer()).getData();
                     width = img.getWidth();
                     height = img.getHeight();
@@ -264,10 +313,12 @@ public class Display extends JavaPlugin{
                         }
                     }
                     if(videoFrame % 100 == 0){
-                        log.info(String.format("Rendered frame %d", videoFrame));
+                        log.info(String.format("Rendered %d frames", videoFrame));
+                        broadcastMsg(String.format("Colormaped %d frames", videoFrame));
                     }
                 }
-                log.info(String.format("Time taken for rendering internally: %d", System.currentTimeMillis() - start));
+                log.info(String.format("Time taken for colormapping: %dms", System.currentTimeMillis() - start));
+                broadcastMsg(String.format("Time taken for colormapping: %ds", (System.currentTimeMillis() - start)/1000));
             }
             //log.info(String.valueOf(video[0][0][0]));
             videoFrame = 0;
@@ -278,6 +329,7 @@ public class Display extends JavaPlugin{
             if(w*h>10000){
                 ticks = 2L;
             }
+            broadcastMsg("Starting video in 5s");
             this.videoID = Bukkit.getScheduler().scheduleSyncRepeatingTask(this, new Runnable() {
             @Override
             public void run() {
@@ -286,6 +338,7 @@ public class Display extends JavaPlugin{
                     try{
                         renderVideoFrame();
                     } catch (Exception e){
+                        broadcastErr(String.valueOf(e));
                         e.printStackTrace();
                         videoFrame = video.length;
                     }
@@ -295,13 +348,14 @@ public class Display extends JavaPlugin{
                         videoPlays = false;
                         videoFrame = 0;
                         isVideoPlaying = false;
-                        Bukkit.broadcastMessage("[Display] Done playing video");
+                        broadcastMsg("Done playing video");
                     }
                 }
             }
-        }, 0L, ticks);
+        }, 100L, ticks);
         }
         catch(Exception e){
+            broadcastErr(String.valueOf(e));
             e.printStackTrace();
             log.info(String.format("Frame: %d, Width: %d, Height: %d", videoFrame, pixelW, pixelH));
             videoFrame = 0;
@@ -365,18 +419,22 @@ public class Display extends JavaPlugin{
     }
     
     private void renderImage(int[][] img){
-        World world = Bukkit.getServer().getWorld("display_test");
-        for(int i=0; i<img.length; i++){
-            for (int j=0; j<img[0].length; j++){
-                int diff = -img[i][j];
-                Block block = world.getBlockAt(i,5,j);
+        Bukkit.getScheduler().runTask(this, new Runnable(){
+            public void run(){
                 Material m;
-                m = colormap.matchColor(diff);
-                if (m != block.getType()){
-                    block.setType(m);
+                World world = Bukkit.getServer().getWorld("display_test");
+                for(int i=0; i<img.length; i++){
+                    for (int j=0; j<img[0].length; j++){
+                        int diff = -img[i][j];
+                        Block block = world.getBlockAt(i,5,j);
+                        m = colormap.matchColor(diff);
+                        if (m != block.getType()){
+                            block.setType(m);
+                        }
+                    }
                 }
             }
-        }
+        });
     }
     
     private void spawnDisplay(){
