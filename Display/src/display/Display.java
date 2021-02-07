@@ -246,7 +246,7 @@ public class Display extends JavaPlugin{
                     
                     renderImage(pixels);
                     log.info(String.format("Rendering time: %dms", System.currentTimeMillis() - start));
-                    broadcastMsg(String.format("Rendered image in: %.2fs", ((double)System.currentTimeMillis() - start)/1000));
+                    broadcastMsg(String.format("Rendered image in %.2fs", ((double)System.currentTimeMillis() - start)/1000));
                 }
                 catch (Exception e){
                     log.warning(String.valueOf(e));
@@ -441,7 +441,7 @@ public class Display extends JavaPlugin{
     
     private void despawnDisplay(){
         World world = Bukkit.getServer().getWorld("display_test");
-        log.info("Spawning display");
+        log.info("Despawning display");
         for(int i=0; i<w; i++){
             
             for(int j=0; j<h; j++){

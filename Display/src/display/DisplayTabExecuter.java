@@ -51,6 +51,8 @@ public class DisplayTabExecuter implements TabExecutor{
                     commands.add("512x288");
                     commands.add("640x360");
                     commands.add("768x432");
+                    commands.add("896x504");
+                    commands.add("1024x576");
                     break;
                 case "image":
                     {
