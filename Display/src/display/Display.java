@@ -263,9 +263,9 @@ public class Display extends JavaPlugin{
                 broadcastMsg(String.format("Start rendering video: %s", path));
                 Process pr;
                 if(w*h<10000){
-                    pr = rt.exec(String.format("python plugins/Display/resize.py plugins/Display/video/%s %dx%d", path, w, h));
+                    pr = rt.exec(String.format("python plugins/MCdisplay/resize.py plugins/MCdisplay/video/%s %dx%d", path, w, h));
                 } else {
-                    pr = rt.exec(String.format("python plugins/Display/resize.py plugins/Display/video/%s %dx%d --fps 10", path, w, h));
+                    pr = rt.exec(String.format("python plugins/MCdisplay/resize.py plugins/MCdisplay/video/%s %dx%d --fps 10", path, w, h));
                 }
                 int p = pr.waitFor();
                 log.info("Rendered video");
@@ -273,13 +273,13 @@ public class Display extends JavaPlugin{
                 
                 log.info("Reading video data");
                 JSONParser jsonParser = new JSONParser();
-                FileReader reader = new FileReader("plugins/Display/resized/video.json");
+                FileReader reader = new FileReader("plugins/MCdisplay/resized/video.json");
                 Object obj = jsonParser.parse(reader);
                 JSONObject data = (JSONObject) obj;
                 long lframes = (long)data.get("frames");
                 frames = Math.toIntExact(lframes);
-                log.info(String.format("Number of Frames: %d", frames));
-                broadcastMsg(String.format("Number of Frames: %d", frames));
+                log.info(String.format("Number of frames: %d", frames));
+                broadcastMsg(String.format("Number of frames: %d", frames));
                 reader.close();
                 
                 long start = System.currentTimeMillis();
@@ -292,7 +292,7 @@ public class Display extends JavaPlugin{
                 File f;
                 broadcastMsg("Colormapping frames...");
                 for(videoFrame = 0; videoFrame<frames; videoFrame++){
-                    f = new File(String.format("plugins/Display/resized/%s_%d.jpg", path, videoFrame));
+                    f = new File(String.format("plugins/MCdisplay/resized/%s_%d.jpg", path, videoFrame));
                     img = ImageIO.read(f);
                     //img = images.get(videoFrame);
                     //images.remove(0);
@@ -313,8 +313,8 @@ public class Display extends JavaPlugin{
                         }
                     }
                     if(videoFrame % 100 == 0){
-                        log.info(String.format("Rendered %d frames", videoFrame));
-                        broadcastMsg(String.format("Colormaped %d frames", videoFrame));
+                        log.info(String.format("Colormapped %d frames", videoFrame));
+                        broadcastMsg(String.format("Colormapped %d frames", videoFrame));
                     }
                 }
                 log.info(String.format("Time taken for colormapping: %dms", System.currentTimeMillis() - start));
@@ -410,7 +410,7 @@ public class Display extends JavaPlugin{
                 World world = Bukkit.getServer().getWorld("display_test");
                 for(int i=0; i<img.length; i++){
                     for (int j=0; j<img[0].length; j++){
-                        block = world.getBlockAt(i,5,j);
+                        block = world.getBlockAt(i,3,j);
                         m = img[i][j];
                         if (m != block.getType()){
                             block.setType(m);
@@ -431,7 +431,7 @@ public class Display extends JavaPlugin{
                 if(vertical){
                     world.getBlockAt(i,h-j+5,0).setType(Material.BLACK_CONCRETE);
                 } else {
-                    world.getBlockAt(i,5,j).setType(Material.BLACK_CONCRETE);
+                    world.getBlockAt(i,3,j).setType(Material.BLACK_CONCRETE);
                 }
             }
             //log.info(String.format("Spawend row %d", i));
@@ -449,7 +449,7 @@ public class Display extends JavaPlugin{
                 if(vertical){
                     world.getBlockAt(i,h-j+5,0).setType(Material.AIR);
                 } else {
-                    world.getBlockAt(i,5,j).setType(Material.AIR);
+                    world.getBlockAt(i,3,j).setType(Material.AIR);
                 }
             }
             //log.info(String.format("Despawend row %d", i));
