@@ -5,6 +5,7 @@
  */
 package display;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -42,13 +43,35 @@ public class DisplayTabExecuter implements TabExecutor{
             commands.add("resolution");
             StringUtil.copyPartialMatches(args[0], commands, completions);
         } else if(args.length == 2){
-            if(args[0].equals("resolution")){
-                commands.add("128x72");
-                commands.add("256x144");
-                commands.add("384x216");
-                commands.add("512x288");
-                commands.add("640x360");
-                commands.add("768x432");
+            switch (args[0]) {
+                case "resolution":
+                    commands.add("128x72");
+                    commands.add("256x144");
+                    commands.add("384x216");
+                    commands.add("512x288");
+                    commands.add("640x360");
+                    commands.add("768x432");
+                    break;
+                case "image":
+                    {
+                        File[] folder = new File("plugins/MCdisplay/image").listFiles();
+                        for(File f: folder){
+                            if(f.isFile()){
+                                commands.add(f.getName());
+                            }
+                        }       break;
+                    }
+                case "video":
+                    {
+                        File[] folder = new File("plugins/MCdisplay/video").listFiles();
+                        for(File f: folder){
+                            if(f.isFile()){
+                                commands.add(f.getName());
+                            }
+                        }       break;
+                    }
+                default:
+                    break;
             }
             StringUtil.copyPartialMatches(args[1], commands, completions);
         }

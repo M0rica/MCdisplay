@@ -230,10 +230,10 @@ public class Display extends JavaPlugin{
                     log.info("Reading resized image " + path);
                     File f = new File("plugins/MCdisplay/resized/" + path);
                     BufferedImage img = ImageIO.read(f);
-                    int[][] pixels = new int[w][h];
+                    Material[][] pixels = new Material[w][h];
                     for(int i = 0; i < w; i++){
                         for(int j = 0; j < h; j++){
-                            pixels[i][j] = img.getRGB(i, j);
+                            pixels[i][j] = colormap.matchColor(-img.getRGB(i, j));
                         }
                     }
                     //log.info(String.valueOf(pixels[0][0]));
@@ -241,10 +241,12 @@ public class Display extends JavaPlugin{
                     //log.info(String.valueOf(pixels[200][1]));
                     //log.info(String.valueOf(pixels[69][12]));
 
+                    
                     log.info(String.format("Rendering image %s to display", path));
+                    
                     renderImage(pixels);
                     log.info(String.format("Rendering time: %dms", System.currentTimeMillis() - start));
-                    broadcastMsg(String.format("Rendered image in: %ds", (System.currentTimeMillis() - start)/1000));
+                    broadcastMsg(String.format("Rendered image in: %.2fs", ((double)System.currentTimeMillis() - start)/1000));
                 }
                 catch (Exception e){
                     log.warning(String.valueOf(e));
@@ -268,6 +270,7 @@ public class Display extends JavaPlugin{
                 int p = pr.waitFor();
                 log.info("Rendered video");
                 broadcastMsg("Rendered video");
+                
                 log.info("Reading video data");
                 JSONParser jsonParser = new JSONParser();
                 FileReader reader = new FileReader("plugins/Display/resized/video.json");
@@ -278,16 +281,13 @@ public class Display extends JavaPlugin{
                 log.info(String.format("Number of Frames: %d", frames));
                 broadcastMsg(String.format("Number of Frames: %d", frames));
                 reader.close();
+                
                 long start = System.currentTimeMillis();
                 video = new Material[frames][h][w];
                 path = path.split("\\.")[0];
                 int width, height;
                 float[] rgb = new float[3];
-                /*ArrayList<BufferedImage> images = new ArrayList<BufferedImage>();
-                for(videoFrame = 0; videoFrame<frames; videoFrame++){
-                    File f = new File(String.format("plugins/Display/resized/%s_%d.jpg", path, videoFrame));
-                    images.add(ImageIO.read(f));
-                }*/
+                
                 BufferedImage img;
                 File f;
                 broadcastMsg("Colormapping frames...");
@@ -370,26 +370,10 @@ public class Display extends JavaPlugin{
     
     
     public void createVideoArray(float[] pixel){
-        //int pixel = Math.toIntExact(lpixel);
         Material m = colormap.matchColor(pixel);
         if(m == null){
             log.info("No Material!");
         }
-        /*if(pixel <= 8000000){ //1841616
-            m = Material.WHITE_CONCRETE;
-        } else if(diff > 1036335 && diff < 2072670){
-            world.getBlockAt(i,10,j).setType(Material.ORANGE_CONCRETE);
-        } else if(diff > 2072670 && diff < 3109005){
-            world.getBlockAt(i,10,j).setType(Material.MAGENTA_CONCRETE);
-        } else if(pixel > 8000000 && pixel <= 9000000) { //8257152
-            m = Material.LIGHT_GRAY_CONCRETE;
-        } else if(pixel > 8800000 && pixel <= 9000000) { //8257152
-                    m = Material.CYAN_CONCRETE;
-        } else if(pixel > 9000000 && pixel <= 14000000) { //8257152
-            m = Material.GRAY_CONCRETE;
-        } else {
-            m = Material.BLACK_CONCRETE;
-        }*/
         video[videoFrame][pixelH][pixelW] = m;
     }
     
@@ -418,23 +402,23 @@ public class Display extends JavaPlugin{
         }
     }
     
-    private void renderImage(int[][] img){
-        Bukkit.getScheduler().runTask(this, new Runnable(){
+    private void renderImage(Material[][] img){
+        Bukkit.getScheduler().runTaskLater(this, new Runnable(){
             public void run(){
+                Block block;
                 Material m;
                 World world = Bukkit.getServer().getWorld("display_test");
                 for(int i=0; i<img.length; i++){
                     for (int j=0; j<img[0].length; j++){
-                        int diff = -img[i][j];
-                        Block block = world.getBlockAt(i,5,j);
-                        m = colormap.matchColor(diff);
+                        block = world.getBlockAt(i,5,j);
+                        m = img[i][j];
                         if (m != block.getType()){
                             block.setType(m);
                         }
                     }
                 }
             }
-        });
+        }, 1L);
     }
     
     private void spawnDisplay(){
