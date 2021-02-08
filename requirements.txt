@@ -1,0 +1,2 @@
+PIL
+opencv-python
