@@ -45,4 +45,4 @@ MCdisplay is a modern and fast bukkit plugin for rendering any image or video fr
   Changing resolution is as simple as typing `/display resolution <width>x<height>`, the plugin will suggest you some 16:9 resolutions you can select so you don't have to look them up. You can change to any resolution and aspect resolution though, I wouldn't recommend going higher than 1280x720.
     The screen will despawn and then spawn again which can lagg the server for a few seconds. Your videos and images will automatically get scaled to the highest resolution possible to fit your current resolution and aspect ratio.
   ### Turn display on/off
-  You can spawn/despan the display by typing `display <on/off>`, that will either spawn or remove the display in the current resolution.
+  You can spawn/despan the display by typing `/display <on/off>`, that will either spawn or remove the display in the current resolution.
