@@ -23,10 +23,12 @@ MCdisplay is a modern and fast bukkit plugin for rendering any image or video fr
   * The screen will be located at 0 0 in your world, so first teleport there.
   * The default resolution is 256x144, which the resolution will be reset to every time you restart the server.
   ### Images
-    To display an image, you first have to put it in the "image" folder as described above. After that, you can simply render it by typing "/display image <YourImage.jpg>". The tab completion will show you what files you are able to render.
+    To display an image, you first have to put it in the "image" folder as described above. 
+    After that, you can simply render it by typing "/display image <YourImage.jpg>". The tab completion will show you what files you are able to render.
     Not all image formats are supported, for example not supported are .webp images.
   ### Videos
-    To play a video, you first have to put it in the "video" folder as described above. After that, just type "/display video <YourVideo.mp4>" to start rendering a video. 
+    To play a video, you first have to put it in the "video" folder as described above. 
+    After that, just type "/display video <YourVideo.mp4>" to start rendering a video. 
     Videos are handled a little diffrently than images. Images get rendered and instantly displayed while videos will be first rendered completely frame-by-frame. This is to enable video playback of up to 20fps, Minecrafts limit for placing blocks.
     There will be a message in the chat when your video is ready and will start playing, it takes about 30 seconds to render a 5 minute video in 20fps, so you don't have to wait too long!
     Videos have a maximum resolution of 256 in heigth as they get display vertically instead of horizontally as images, this is to reduce the amount of chunks that have to be updated each frame.
