@@ -53,12 +53,14 @@ public class Display extends JavaPlugin{
     String lastvid;
     
     BlockColor colormap;
-            
+    World world;
+    
     public void onEnable(){
         colormap = new BlockColor();
         TabExecutor tabExecutor = new DisplayTabExecuter(this);
         this.getCommand("display").setExecutor(tabExecutor);
         this.getCommand("display").setTabCompleter(tabExecutor);
+        world = Bukkit.getWorlds().get(0);
         log.info("Plugin enabled");
     }
     
@@ -73,11 +75,11 @@ public class Display extends JavaPlugin{
             switch (args[0]) {
                 case "on":
                     spawnDisplay();
-                    broadcastMsg("Turned display on!");
+                    broadcastMsg("Display turned on!");
                     return true;
                 case "off":
                     despawnDisplay();
-                    broadcastMsg("Turned display off!");
+                    broadcastMsg("Display turned off!");
                     return true;
                 case "image":
                     if(doesFileExists("image/" + args[1])){
@@ -230,18 +232,14 @@ public class Display extends JavaPlugin{
                     log.info("Reading resized image " + path);
                     File f = new File("plugins/MCdisplay/resized/" + path);
                     BufferedImage img = ImageIO.read(f);
+                    log.info("Colormapping " + path);
                     Material[][] pixels = new Material[w][h];
                     for(int i = 0; i < w; i++){
                         for(int j = 0; j < h; j++){
                             pixels[i][j] = colormap.matchColor(-img.getRGB(i, j));
                         }
                     }
-                    //log.info(String.valueOf(pixels[0][0]));
-                    //log.info(String.valueOf(pixels[23][4]));
-                    //log.info(String.valueOf(pixels[200][1]));
-                    //log.info(String.valueOf(pixels[69][12]));
-
-                    
+                    colormap.clearCache();
                     log.info(String.format("Rendering image %s to display", path));
                     
                     renderImage(pixels);
@@ -263,7 +261,7 @@ public class Display extends JavaPlugin{
                 broadcastMsg(String.format("Start rendering video: %s", path));
                 Process pr;
                 if(w*h<10000){
-                    pr = rt.exec(String.format("python plugins/MCdisplay/resize.py plugins/MCdisplay/video/%s %dx%d", path, w, h));
+                    pr = rt.exec(String.format("python plugins/MCdisplay/resize.py plugins/MCdisplay/video/%s %dx%d --fps 20", path, w, h));
                 } else {
                     pr = rt.exec(String.format("python plugins/MCdisplay/resize.py plugins/MCdisplay/video/%s %dx%d --fps 10", path, w, h));
                 }
@@ -317,6 +315,7 @@ public class Display extends JavaPlugin{
                         broadcastMsg(String.format("Colormapped %d frames", videoFrame));
                     }
                 }
+                colormap.clearCache();
                 log.info(String.format("Time taken for colormapping: %dms", System.currentTimeMillis() - start));
                 broadcastMsg(String.format("Time taken for colormapping: %ds", (System.currentTimeMillis() - start)/1000));
             }
@@ -335,13 +334,6 @@ public class Display extends JavaPlugin{
             public void run() {
                 //log.info(String.valueOf(isPaused));
                 if(!isPaused){
-                    try{
-                        renderVideoFrame();
-                    } catch (Exception e){
-                        broadcastErr(String.valueOf(e));
-                        e.printStackTrace();
-                        videoFrame = video.length;
-                    }
                     if(videoFrame>=video.length){
                         //video = null;
                         Bukkit.getServer().getScheduler().cancelTask(videoID);
@@ -349,6 +341,13 @@ public class Display extends JavaPlugin{
                         videoFrame = 0;
                         isVideoPlaying = false;
                         broadcastMsg("Done playing video");
+                    }
+                    try{
+                        renderVideoFrame();
+                    } catch (Exception e){
+                        broadcastErr(String.valueOf(e));
+                        e.printStackTrace();
+                        videoFrame = video.length;
                     }
                 }
             }
@@ -379,7 +378,6 @@ public class Display extends JavaPlugin{
     
     private void renderVideoFrame(){
         long start = System.currentTimeMillis();
-        World world = Bukkit.getServer().getWorld("display_test");
         Material[][] frame = video[videoFrame];
         Material blockmaterial;
         Material newMaterial = Material.BLACK_CONCRETE;
@@ -407,7 +405,6 @@ public class Display extends JavaPlugin{
             public void run(){
                 Block block;
                 Material m;
-                World world = Bukkit.getServer().getWorld("display_test");
                 for(int i=0; i<img.length; i++){
                     for (int j=0; j<img[0].length; j++){
                         block = world.getBlockAt(i,3,j);
@@ -422,7 +419,6 @@ public class Display extends JavaPlugin{
     }
     
     private void spawnDisplay(){
-        World world = Bukkit.getServer().getWorld("display_test");
         log.info("Spawning display");
         for(int i=0; i<w; i++){
 
@@ -440,7 +436,6 @@ public class Display extends JavaPlugin{
     }
     
     private void despawnDisplay(){
-        World world = Bukkit.getServer().getWorld("display_test");
         log.info("Despawning display");
         for(int i=0; i<w; i++){
             
