@@ -10,6 +10,7 @@ import java.awt.image.DataBufferByte;
 import java.io.File;
 import java.io.FileReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.logging.Logger;
 import javax.imageio.ImageIO;
 import org.bukkit.Bukkit;
@@ -34,6 +35,8 @@ import org.json.simple.parser.JSONParser;
  */
 
 public class Display extends JavaPlugin{
+    
+    String backend_path = "python plugins/MCdisplay/resize.py";
     
     Logger log = this.getLogger();
     int w = 256;
@@ -82,15 +85,13 @@ public class Display extends JavaPlugin{
                     broadcastMsg("Display turned off!");
                     return true;
                 case "image":
-                    if(doesFileExists("image/" + args[1])){
+                    String path = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
+                    if(doesFileExists("image/" + path)){
                         if(!videoPlays){
-                            broadcastMsg("Rendering image " + args[1]);
-                            drawImage(args[1]);
+                            drawImage(path);
                         } else {
                             broadcastErr("There is a video playing or rendering, you can't render an image right now!");
                         }
-                    } else {
-                        broadcastErr(String.format("The file %s does not exist!", args[1]));
                     }
                     return true;
                 case "pause":
@@ -116,7 +117,8 @@ public class Display extends JavaPlugin{
                     broadcastMsg("Successfully changed resolution to " + args[1] + "!");
                     return true;
                 case "video":
-                    if(doesFileExists("video/" + args[1])){
+                    path = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
+                    if(doesFileExists("video/" + path)){
                         if(!videoPlays){
                             videoPlays = true;
                             if(w>256 || h>251){
@@ -126,18 +128,18 @@ public class Display extends JavaPlugin{
                                 despawnDisplay();
                                 vertical = true;
                             }
-                            broadcastMsg("Preparing video " + args[1] + ", may take a while!");
+                            broadcastMsg("Preparing video " + path + ", may take a while!");
                             Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable() {
                                 @Override
                                 public void run() {
-                                    if(args[1].equals(lastvid) && w == lastW && h == lastH){
-                                        drawVideo(args[1], true);
+                                    if(path.equals(lastvid) && w == lastW && h == lastH){
+                                        drawVideo(path, true);
                                     } else {
                                         log.info("New Video");
                                         lastW = w;
                                         lastH = h;
-                                        lastvid = args[1];
-                                        drawVideo(args[1], false);
+                                        lastvid = path;
+                                        drawVideo(path, false);
                                     }
                                 }
                             });
@@ -173,8 +175,8 @@ public class Display extends JavaPlugin{
                                 }
                                 }
                             });
-                    } else{
-                        broadcastErr("There is no last video to play!");
+                    } else {
+                        broadcastErr("There is no video in memory to play!");
                     }
                     return true;
                 default:
@@ -185,7 +187,12 @@ public class Display extends JavaPlugin{
     }
     
     private boolean doesFileExists(String file){
-        return new File(String.format("plugins/MCdisplay/%s", file)).isFile();
+        log.info(String.format("\"plugins/MCdisplay/%s\"", file));
+        boolean isFile = new File(String.format("plugins/MCdisplay/%s", file)).isFile();
+        if(!isFile){
+            broadcastErr(String.format("The file %s does not exist!", file));
+        }
+        return isFile;
     }
     
     private void broadcastMsg(String msg){
@@ -215,6 +222,7 @@ public class Display extends JavaPlugin{
     }
     
     private void drawImage(String path){
+        broadcastMsg("Rendering image " + path);
         Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable(){
             @Override
             public void run(){
@@ -227,7 +235,8 @@ public class Display extends JavaPlugin{
                 Runtime rt = Runtime.getRuntime();
                 try{
                     log.info("Resizing image");
-                    Process pr = rt.exec(String.format("python plugins/MCdisplay/resize.py plugins/MCdisplay/image/%s %dx%d", path, w, h));
+                    Process pr = rt.exec(String.format("%s \"plugins/MCdisplay/image/%s\" %dx%d", backend_path, path, w, h));
+                    log.info(String.format("%s \"plugins/MCdisplay/image/%s\" %dx%d", backend_path, path, w, h));
                     int p = pr.waitFor();
                     log.info("Reading resized image " + path);
                     File f = new File("plugins/MCdisplay/resized/" + path);
@@ -261,9 +270,9 @@ public class Display extends JavaPlugin{
                 broadcastMsg(String.format("Start rendering video: %s", path));
                 Process pr;
                 if(w*h<10000){
-                    pr = rt.exec(String.format("python plugins/MCdisplay/resize.py plugins/MCdisplay/video/%s %dx%d --fps 20", path, w, h));
+                    pr = rt.exec(String.format("%s \"plugins/MCdisplay/video/%s\" %dx%d --fps 20", backend_path, path, w, h));
                 } else {
-                    pr = rt.exec(String.format("python plugins/MCdisplay/resize.py plugins/MCdisplay/video/%s %dx%d --fps 10", path, w, h));
+                    pr = rt.exec(String.format("%s \"plugins/MCdisplay/video/%s\" %dx%d --fps 10", backend_path, path, w, h));
                 }
                 int p = pr.waitFor();
                 log.info("Rendered video");
