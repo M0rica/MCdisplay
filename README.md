@@ -39,7 +39,7 @@ MCdisplay is a modern and fast bukkit plugin for rendering any image or video fr
   ### Pause a video
   You can pause a video playing by typing `/display pause` and resume it ba typing `/display pause` again.
   ### Replay a video
-  You can replay the last video you played by either typing in the video play command with the same filename again or by typing `/display replay`. The last video gets stored in RAM, so it can be played instantly again!
+  You can replay the last video you played by either typing in the video play command with the same filename again or by typing `/display replay`. The last video gets stored in memory, so it can be played instantly again!
   ### Stop a video
   You can also stop the video playing completely by using `/display stop`. This will stop the video and requires you to type in a video or the replay command to start again.
   ### Change resolution
