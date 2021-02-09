@@ -14,8 +14,8 @@ MCdisplay is a modern and fast bukkit plugin for rendering any image or video fr
   
 ## Installation
   * First of all, you need a Craftbukkit or Spigot server that ran at least once and created all the necessary files and folders
-  * If you have that, just copy everything that is in the ready-to-use folder into the server's plugin folder
-  * Inside the plugins folder, there should now be a file called "MCdisplay.jar" as well as a folder called "MCdisplay". Inside that folder should be a file called "resize.exe" (don't be suprised by the size of this file, this is my python backend used to resize images and videos, compiled into an .exe by pyinstaller and the libraries used are quite big) and the two folders "image" and "video". Now just put all images you want to be able to render in Minecraft into the "image" folder, same thing with videos.
+  * If you have that, head over to the releases page and download the latest release, unzip the folder and copy everything into the server's plugin folder
+  * Inside the plugins folder, there should now be a file called "MCdisplay.jar" as well as a folder called "MCdisplay". Inside that folder should be a file called "resize.exe" (don't be suprised by the size of this file, this is my python backend used to resize images and videos, compiled into an .exe by pyinstaller and the libraries used are quite big, if you don't want to use the big .exe, replace the MCdisplay.jar with the latest MCdisplay.jar from "latest build" and copy the resize.py into the directory where the .exe is) and the two folders "image" and "video". Now just put all images you want to be able to render in Minecraft into the "image" folder, same thing with videos.
   * Nice, now you are ready to run the server and render your first image!
   * Start your server and join the world. Once you're on the server, you can simply use `/display` to access all MCdisplay commands, the tab completion will show you what commands are available and they are explained in the "Usage" section below.
   
