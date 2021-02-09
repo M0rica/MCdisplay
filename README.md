@@ -20,6 +20,7 @@ MCdisplay is a modern and fast bukkit plugin for rendering any image or video fr
   * Start your server and join the world. Once you're on the server, you can simply use `/display` to access all MCdisplay commands, the tab completion will show you what commands are available and they are explained in the "Usage" section below.
   
 ## Usage
+  * Use the display in a superflat world with structures disabled
   * The screen will be located at 0 0 in your world, so first teleport there.
   * The default resolution is 256x144, which the resolution will be reset to every time you restart the server.
   * Images or Videos with high contrast work best as the display doesn't support that many colors just yet. There are some exaples in the folders to test out!
