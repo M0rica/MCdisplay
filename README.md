@@ -48,3 +48,6 @@ MCdisplay is a modern and fast bukkit plugin for rendering any image or video fr
     The screen will despawn and then spawn again which can lagg the server for a few seconds. Your videos and images will automatically get scaled to the highest resolution possible to fit your current resolution and aspect ratio.
   ### Turn display on/off
   You can spawn/despan the display by typing `/display <on/off>`, that will either spawn or remove the display in the current resolution.
+
+## Development
+  For development, you need a Java 8 JDK as well as python. Clone this repository to your machine and then install the python requirements via `pip install -r requirements.txt` from the root of this project.
