@@ -31,7 +31,7 @@ def resize_video(path: str, resolution: tuple, target_fps):
 
     while success:
         img = resize_image(Image.fromarray(img), resolution)
-        if round(frames%(fps/target_fps)) == 0:
+        if round(frames%(fps/target_fps), 1) < 1:
             img.save(f'{dir_path}/resized/{path.split("/")[-1].split(".")[0]}_{saved_frames}.jpg')
             saved_frames += 1
         frames += 1
