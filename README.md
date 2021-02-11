@@ -1,5 +1,5 @@
 # MCdisplay
-MCdisplay is a modern and fast bukkit plugin for rendering any image or video from your drive in a 1:1 scale to a display in Minecraft!
+MCdisplay is a modern and fast Bukkit plugin for rendering any image or video from your drive in a 1:1 scale to a display of blocks in Minecraft!
 
 ## Features
 
