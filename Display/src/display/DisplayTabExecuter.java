@@ -16,7 +16,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.StringUtil;
 /**
  *
- * @author Der Gerät
+ * @author M0rica
  */
 public class DisplayTabExecuter implements TabExecutor{
     
@@ -41,6 +41,7 @@ public class DisplayTabExecuter implements TabExecutor{
             commands.add("pause");
             commands.add("stop");
             commands.add("resolution");
+            commands.add("mapimage");
             StringUtil.copyPartialMatches(args[0], commands, completions);
         } else if(args.length == 2){
             switch (args[0]) {
@@ -54,7 +55,7 @@ public class DisplayTabExecuter implements TabExecutor{
                     commands.add("896x504");
                     commands.add("1024x576");
                     break;
-                case "image":
+                case "image": case "mapimage":
                     {
                         File[] folder = new File("plugins/MCdisplay/image").listFiles();
                         for(File f: folder){

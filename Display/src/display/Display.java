@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.logging.Logger;
 import javax.imageio.ImageIO;
+
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
@@ -23,7 +24,17 @@ import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
+import org.bukkit.entity.ArmorStand;
+import org.bukkit.entity.FallingBlock;
+import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.MapMeta;
+import org.bukkit.map.MapRenderer;
+import org.bukkit.map.MapView;
+import org.bukkit.material.MaterialData;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.util.Vector;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -179,6 +190,16 @@ public class Display extends JavaPlugin{
                         broadcastErr("There is no video in memory to play!");
                     }
                     return true;
+                case "mapimage":
+                    path = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
+                    if(doesFileExists("image/" + path)){
+                        if(!videoPlays){
+                            drawImageMap(args[1], (Player) sender);
+                        } else {
+                            broadcastErr("There is a video playing or rendering, you can't render an image right now!");
+                        }
+                    }
+                    return true;
                 default:
                     break;
             }
@@ -211,6 +232,60 @@ public class Display extends JavaPlugin{
                 Bukkit.broadcastMessage(ChatColor.DARK_RED + "[Display] " + ChatColor.RED + msg);
             }
         });
+    }
+    
+    private void drawImageMap(String path, Player player){
+        
+        Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable(){
+            @Override
+            public void run(){
+                long start = System.currentTimeMillis();
+                log.info(String.format("Start rendering new image: %s", path));
+                Runtime rt = Runtime.getRuntime();
+                try{
+                    log.info("Resizing image");
+                    Process pr = rt.exec(String.format("%s \"plugins/MCdisplay/image/%s\" 128x128", backend_path, path));
+                    log.info(String.format("%s \"plugins/MCdisplay/image/%s\" 128x128", backend_path, path));
+                    int p = pr.waitFor();
+                    log.info("Reading resized image " + path);
+                    File f = new File("plugins/MCdisplay/resized/" + path);
+                    BufferedImage img = ImageIO.read(f);
+                    renderImageMap(img, player);
+                } catch(Exception e){
+                    log.warning(String.valueOf(e));
+                }
+            }
+        });
+    }
+    
+    
+    private void renderImageMap(BufferedImage img, Player player){
+        Bukkit.getScheduler().runTaskLater(this, new Runnable(){
+            public void run(){
+                MapView mv;
+                boolean giveItem = true;
+                ItemStack player_item = player.getInventory().getItemInMainHand();
+                if(player_item.getType() == Material.FILLED_MAP){
+                    mv = ((MapMeta)player_item.getItemMeta()).getMapView();
+                    giveItem = false;
+                } else {
+                    mv = Bukkit.createMap(world);
+                }
+                for(MapRenderer r : mv.getRenderers())
+                    mv.removeRenderer(r);
+                log.info(String.valueOf(mv.getRenderers().size()));
+                //ImageMapRenderer renderer = new ImageMapRenderer(img);
+                mv.addRenderer(new ImageMapRenderer(img));
+                ItemStack i = new ItemStack(Material.FILLED_MAP, 1, (short) mv.getId());
+                MapMeta mm = (MapMeta) i.getItemMeta();
+                mm.setMapView(mv);
+                i.setItemMeta(mm);
+                log.info(String.valueOf(mv.getRenderers().size()));
+                if(giveItem){
+                    player.getInventory().addItem(i);
+                }
+            }
+        }, 1L);
     }
     
     private void changeResolution(String res){

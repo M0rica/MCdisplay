@@ -55,7 +55,7 @@ public class BlockColor{
         //new ColorBlock(Material., 0, 0, 0),
         // concrete
         blocks = new ColorBlock[]{
-        new ColorBlock(Material.BLACK_CONCRETE, 8, 10, 15),
+        new ColorBlock(Material.BLACK_CONCRETE, 10, 12, 17),
         new ColorBlock(Material.WHITE_CONCRETE, 207, 213, 214),
         new ColorBlock(Material.ORANGE_CONCRETE, 224, 97, 1),
         new ColorBlock(Material.MAGENTA_CONCRETE, 169, 48, 159),
@@ -90,7 +90,7 @@ public class BlockColor{
         new ColorBlock(Material.GREEN_WOOL, 85, 110, 28),
         new ColorBlock(Material.RED_WOOL, 161, 39, 35),
         
-        // wood TODO
+        // wood
         new ColorBlock(Material.OAK_PLANKS, 162, 131, 79),
         new ColorBlock(Material.SPRUCE_PLANKS, 115, 85, 49),
         new ColorBlock(Material.BIRCH_PLANKS, 192, 175, 121),
