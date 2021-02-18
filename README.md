@@ -7,7 +7,7 @@ MCdisplay is a modern and fast Bukkit plugin for rendering any image or video fr
     * you can change the resolution of the screen, your image or video will automatically get scaled to the right size to fit the screen!
   * render to a display of blocks or to maps  
     * 1 pixel = 1 block
-    * block display supports 35 colors/blocks (for now, I will add more in future updates!)
+    * block display supports 41 colors/blocks (for now, I will add more in future updates!)
   * play videos at 20fps!
   * fast rendering in the background, so as few laggs as possible
   * tab completion that shows you your saved images and videos
