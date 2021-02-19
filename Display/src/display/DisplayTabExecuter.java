@@ -42,6 +42,8 @@ public class DisplayTabExecuter implements TabExecutor{
             commands.add("stop");
             commands.add("resolution");
             commands.add("mapimage");
+            commands.add("mapvideo");
+            commands.add("start");
             StringUtil.copyPartialMatches(args[0], commands, completions);
         } else if(args.length == 2){
             switch (args[0]) {
@@ -64,7 +66,7 @@ public class DisplayTabExecuter implements TabExecutor{
                             }
                         }       break;
                     }
-                case "video":
+                case "video": case "mapvideo":
                     {
                         File[] folder = new File("plugins/MCdisplay/video").listFiles();
                         for(File f: folder){
