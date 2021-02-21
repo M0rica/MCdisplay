@@ -7,6 +7,8 @@ package display;
 
 import java.awt.Image;
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
+import java.util.List;
  
 import org.bukkit.entity.Player;
 import org.bukkit.map.MapCanvas;
@@ -20,11 +22,12 @@ import org.bukkit.map.MinecraftFont;
  */
 public class VideoMapRenderer extends MapRenderer{
     
-    byte[][][] video;
+    List<byte[][]> video;
     boolean finished = false;
     boolean prepare = true;
     int frame = 0;
     int length = 0;
+    int resolution;
     String mapNumber;
     
     public VideoMapRenderer(String mapNumber){
@@ -38,7 +41,7 @@ public class VideoMapRenderer extends MapRenderer{
             return;
         }
         if(prepare){
-            mc.drawText(64, 64, MinecraftFont.Font, mapNumber);
+            mc.drawText(64, 64, MinecraftFont.Font, "§12;" + mapNumber);
             finished = true;
             return;
         }
@@ -46,7 +49,7 @@ public class VideoMapRenderer extends MapRenderer{
            finished = true;
            return;
         }
-        byte[][] videoframe = video[frame];
+        byte[][] videoframe = video.get(frame);
         for(int h = 0; h<videoframe.length; h++){
             for(int w = 0; w<videoframe[0].length; w++){
                 mc.setPixel(h, w, videoframe[h][w]);
@@ -55,7 +58,7 @@ public class VideoMapRenderer extends MapRenderer{
         frame++;
     }
     
-    public void setVideo(byte[][] vid, int frames, int res){
+    /*public void setVideo(byte[][] vid, int frames, int res){
         video = new byte[frames][res][res];
         length = frames;
         int f = 0, h = 0, w = 0;
@@ -74,6 +77,30 @@ public class VideoMapRenderer extends MapRenderer{
         }
         frame = 0;
         prepare = true;
+    }*/
+    
+    public void initVideo(int frames, int res){
+        video = new ArrayList<byte[][]>();
+        length = frames;
+        resolution = res;
+        prepare = true;
+        frame = 0;
+    }
+    
+    public void addFrame(byte[] f){
+        byte[][] tempFrame = new byte[resolution][resolution];
+        int h = 0, w = 0;
+        w = 0;
+        h = 0;
+        for(byte color: f){
+            tempFrame[h][w] = color;
+            h++;
+            if(h == 128){
+                h = 0;
+                w++;
+            }
+        }
+        video.add(tempFrame);
     }
     
     public void start(){

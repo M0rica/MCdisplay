@@ -33,6 +33,7 @@ import org.bukkit.inventory.meta.MapMeta;
 import org.bukkit.map.MapRenderer;
 import org.bukkit.map.MapView;
 import org.bukkit.material.MaterialData;
+import org.bukkit.map.MapPalette;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.util.Vector;
 
@@ -65,6 +66,10 @@ public class Display extends JavaPlugin{
     boolean vertical = false;
     int lastW, lastH;
     String lastvid;
+    
+    VideoMapRenderer[] videoMaps;
+    boolean mapVideoPrepared = false;
+    int mapVideoFrames;
     
     BlockColor colormap;
     World world;
@@ -146,7 +151,6 @@ public class Display extends JavaPlugin{
                                     if(path.equals(lastvid) && w == lastW && h == lastH){
                                         drawVideo(path, true);
                                     } else {
-                                        log.info("New Video");
                                         lastW = w;
                                         lastH = h;
                                         lastvid = path;
@@ -178,10 +182,8 @@ public class Display extends JavaPlugin{
                                     if(w == lastW && h == lastH){
                                     drawVideo(lastvid, true);
                                 } else {
-                                    log.info("New Video");
                                     lastW = w;
                                     lastH = h;
-                                    lastvid = args[1];
                                     drawVideo(lastvid, false);
                                 }
                                 }
@@ -194,12 +196,29 @@ public class Display extends JavaPlugin{
                     path = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
                     if(doesFileExists("image/" + path)){
                         if(!videoPlays){
-                            drawImageMap(args[1], (Player) sender);
+                            drawImageMap(path, (Player) sender);
                         } else {
                             broadcastErr("There is a video playing or rendering, you can't render an image right now!");
                         }
                     }
                     return true;
+                    
+                case "mapvideo":
+                    path = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
+                    if(doesFileExists("video/" + path)){
+                        boolean doReplay = path.equals(lastvid);
+                        if(!videoPlays){
+                            drawVideoMap(path, (Player) sender, doReplay);
+                        } else {
+                            broadcastErr("There is a video playing or rendering, you can't render an image right now!");
+                        }
+                    }
+                    return true;
+                case "start":
+                    if(mapVideoPrepared && !videoPlays){
+                        videoPlays = true;
+                        startMapVideo();
+                    }
                 default:
                     break;
             }
@@ -243,14 +262,20 @@ public class Display extends JavaPlugin{
                 log.info(String.format("Start rendering new image: %s", path));
                 Runtime rt = Runtime.getRuntime();
                 try{
+                    int num_maps = getNumMaps();
+                    int res = 128*num_maps;
                     log.info("Resizing image");
-                    Process pr = rt.exec(String.format("%s \"plugins/MCdisplay/image/%s\" 128x128", backend_path, path));
-                    log.info(String.format("%s \"plugins/MCdisplay/image/%s\" 128x128", backend_path, path));
+                    Process pr = rt.exec(String.format("%s \"plugins/MCdisplay/image/%s\" %dx%d", backend_path, path, res, res));
+                    log.info(String.format("%s \"plugins/MCdisplay/image/%s\" %dx%d", backend_path, path, res, res));
                     int p = pr.waitFor();
                     log.info("Reading resized image " + path);
                     File f = new File("plugins/MCdisplay/resized/" + path);
                     BufferedImage img = ImageIO.read(f);
-                    renderImageMap(img, player);
+                    if(num_maps > 1){
+                        renderImageMultipleMaps(img, num_maps, player);
+                    } else {
+                        renderImageMap(img, player);
+                    }
                 } catch(Exception e){
                     log.warning(String.valueOf(e));
                 }
@@ -258,6 +283,13 @@ public class Display extends JavaPlugin{
         });
     }
     
+    private int getNumMaps(){
+        int num_maps = Math.max(w/128, h/128);
+        if(num_maps == 0){
+            num_maps = 1;
+        }
+        return num_maps;
+    }
     
     private void renderImageMap(BufferedImage img, Player player){
         Bukkit.getScheduler().runTaskLater(this, new Runnable(){
@@ -273,19 +305,205 @@ public class Display extends JavaPlugin{
                 }
                 for(MapRenderer r : mv.getRenderers())
                     mv.removeRenderer(r);
-                log.info(String.valueOf(mv.getRenderers().size()));
                 //ImageMapRenderer renderer = new ImageMapRenderer(img);
                 mv.addRenderer(new ImageMapRenderer(img));
                 ItemStack i = new ItemStack(Material.FILLED_MAP, 1, (short) mv.getId());
                 MapMeta mm = (MapMeta) i.getItemMeta();
                 mm.setMapView(mv);
                 i.setItemMeta(mm);
-                log.info(String.valueOf(mv.getRenderers().size()));
                 if(giveItem){
                     player.getInventory().addItem(i);
                 }
             }
         }, 1L);
+    }
+    
+    private void renderImageMultipleMaps(BufferedImage img, int maps, Player player){
+        Bukkit.getScheduler().runTaskLater(this, new Runnable(){
+            public void run(){
+                MapView mv;
+                BufferedImage tempImg;
+                int num_maps = maps*maps;
+                int wmap = 1;
+                int hmap = 1;
+                int x, y;
+                for(int i = 1; i<=num_maps; i++){
+                    x = 128*(wmap-1);
+                    y = 128*(hmap-1);
+                    //log.info(String.format("x:%d, y:%d, w:%d, h:%d", x, y, 128, 128));
+                    tempImg = img.getSubimage(x, y, 128, 128);
+                    mv = Bukkit.createMap(world);
+                    for(MapRenderer r : mv.getRenderers())
+                        mv.removeRenderer(r);
+                    mv.addRenderer(new ImageMapRenderer(tempImg));
+                    ItemStack item = new ItemStack(Material.FILLED_MAP, 1, (short) mv.getId());
+                    MapMeta mm = (MapMeta) item.getItemMeta();
+                    mm.setMapView(mv);
+                    item.setItemMeta(mm);
+                    player.getInventory().addItem(item);
+                    wmap++;
+                    if(wmap > maps){
+                        wmap = 1;
+                        hmap++;
+                    }
+                }
+            }
+        }, 1L);
+    }
+    
+    private void drawVideoMap(String vpath, Player player, boolean replay){
+        mapVideoPrepared = false;
+        int num_maps = getNumMaps();
+        log.info(String.valueOf(num_maps));
+        int maps = num_maps*num_maps;
+        int wmap = 1, hmap = 1;
+        MapView mv;
+        videoMaps = new VideoMapRenderer[maps];
+        for(int i = 0; i<maps; i++){
+            mv = Bukkit.createMap(world);
+            for(MapRenderer r : mv.getRenderers())
+                mv.removeRenderer(r);
+            VideoMapRenderer renderer = new VideoMapRenderer(String.format("%d_%d", wmap, hmap));
+            mv.addRenderer(renderer);
+            videoMaps[i] = renderer;
+            ItemStack item = new ItemStack(Material.FILLED_MAP, 1, (short) mv.getId());
+            MapMeta mm = (MapMeta) item.getItemMeta();
+            mm.setMapView(mv);
+            item.setItemMeta(mm);
+            player.getInventory().addItem(item);
+            wmap++;
+            if(wmap == num_maps+1){
+                wmap = 1;
+                hmap++;
+            }
+        }
+        
+        Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable(){
+            @Override
+            public void run(){
+                Runtime rt = Runtime.getRuntime();
+                try{
+                    if(!replay){
+                        log.info(String.format("Start rendering video: %s", vpath));
+                        broadcastMsg(String.format("Start rendering video: %s", vpath));
+                        int res = num_maps*128;
+                        Process pr = rt.exec(String.format("%s \"plugins/MCdisplay/video/%s\" %dx%d --fps 20", backend_path, vpath, res, res));
+                        int p = pr.waitFor();
+                        log.info("Rendered video");
+                        broadcastMsg("Rendered video");
+
+                        log.info("Reading video data");
+                        JSONParser jsonParser = new JSONParser();
+                        FileReader reader = new FileReader("plugins/MCdisplay/resized/video.json");
+                        Object obj = jsonParser.parse(reader);
+                        JSONObject data = (JSONObject) obj;
+                        long lframes = (long)data.get("frames");
+                        frames = Math.toIntExact(lframes);
+                        mapVideoFrames = frames;
+                        log.info(String.format("Number of frames: %d", frames));
+                        broadcastMsg(String.format("Number of frames: %d", frames));
+                        reader.close();
+
+                        long start = System.currentTimeMillis();
+                        String path = vpath.split("\\.")[0];
+
+                        broadcastMsg("Loading video into maps...");
+
+                        for(int i = 0; i<maps; i++){
+                            videoMaps[i].initVideo(frames, res);
+                        }
+                        
+                        BufferedImage img;
+                        File f;
+                        BufferedImage tempImg;
+                        byte[][][] videos =  new byte[maps][frames][num_maps*128];
+                        int mapw = 0, maph = 0;
+                        for(videoFrame = 0; videoFrame<frames; videoFrame++){
+                            maph = 0;
+                            mapw = 0;
+                            f = new File(String.format("plugins/MCdisplay/resized/%s_%d.jpg", path, videoFrame));
+                            img = ImageIO.read(f);
+
+                            int x, y;
+                            for(int i = 0; i<maps; i++){
+                                x = 128*mapw;
+                                y = 128*maph;
+                                //log.info(String.format("x: %d, y: %d", x, y));
+                                //log.info(String.format("x:%d, y:%d, w:%d, h:%d", x, y, 128, 128));
+                                tempImg = img.getSubimage(x, y, 128, 128);
+                                //videos[i][videoFrame] = MapPalette.imageToBytes(tempImg);
+                                videoMaps[i].addFrame(MapPalette.imageToBytes(tempImg));
+                                mapw++;
+                                if(mapw == num_maps){
+                                    mapw = 0;
+                                    maph++;
+                                }
+                            }
+
+                            if(videoFrame % 100 == 0){
+                                log.info(String.format("Colormapped %d frames", videoFrame));
+                                broadcastMsg(String.format("Colormapped %d frames", videoFrame));
+                            }
+                        }
+                        log.info(String.format("Time taken for colormapping: %dms", System.currentTimeMillis() - start));
+                        videoFrame = 0;
+                        /*for(int i = 0; i<maps; i++){
+                            videoMaps[i].setVideo(videos[i], frames, res);
+                        }*/
+                        broadcastMsg(String.format("Time taken for colormapping: %ds", (System.currentTimeMillis() - start)/1000));
+                    }
+
+                    broadcastMsg("MapVideo prepared, use '/display start' to start playback.");
+                    mapVideoPrepared = true;
+                }
+                catch(Exception e){
+                    broadcastErr(String.valueOf(e));
+                    e.printStackTrace();
+                    log.info(String.format("Frame: %d, Width: %d, Height: %d", videoFrame, pixelW, pixelH));
+                    videoFrame = 0;
+                    videoPlays = false;
+                    isPaused = false;
+                    isVideoPlaying = false;
+                    mapVideoPrepared = false;
+                }
+            }
+        });
+    }
+    
+    private void startMapVideo(){
+        videoFrame = 0;
+        isVideoPlaying = true;
+        for(VideoMapRenderer r: videoMaps){
+            r.start();
+        }
+        this.videoID = Bukkit.getScheduler().scheduleSyncRepeatingTask(this, new Runnable() {
+            @Override
+            public void run() {
+                //log.info(String.valueOf(isPaused));
+                if(!isPaused){
+                    for(VideoMapRenderer r: videoMaps){
+                        r.setFinished(false);
+                    }
+                    if(videoFrame>=mapVideoFrames){
+                        //video = null;
+                        for(VideoMapRenderer r: videoMaps){
+                            r.setFinished(true);
+                        }
+                        Bukkit.getServer().getScheduler().cancelTask(videoID);
+                        videoPlays = false;
+                        videoFrame = 0;
+                        isVideoPlaying = false;
+                        broadcastMsg("Done playing video");
+                    }
+                    videoFrame++;
+
+                } else {
+                    for(VideoMapRenderer r: videoMaps){
+                        r.setFinished(true);
+                    }
+                }
+            }
+        }, 100L, 1L);
     }
     
     private void changeResolution(String res){
@@ -341,6 +559,7 @@ public class Display extends JavaPlugin{
         Runtime rt = Runtime.getRuntime();
         try{
             if(!replay){
+                log.info("New Video");
                 log.info(String.format("Start rendering video: %s", path));
                 broadcastMsg(String.format("Start rendering video: %s", path));
                 Process pr;
