@@ -44,6 +44,7 @@ public class DisplayTabExecuter implements TabExecutor{
             commands.add("mapimage");
             commands.add("mapvideo");
             commands.add("start");
+            commands.add("tp");
             StringUtil.copyPartialMatches(args[0], commands, completions);
         } else if(args.length == 2){
             switch (args[0]) {

@@ -121,16 +121,20 @@ public class Display extends JavaPlugin{
                     }
                     return true;
                 case "stop":
-                    videoFrame = video.length;
+                    try{
+                        videoFrame = video.length;
+                    } catch(Exception e){
+                        videoFrame = frames;
+                    }
                     broadcastMsg("Stopped video");
                     return true;
                 case "resolution":
                     if(!videoPlays){
                         changeResolution(args[1]);
+                        broadcastMsg("Successfully changed resolution to " + args[1] + "!");
                     } else {
                         broadcastErr("Can't change reolution while playing a video!");
                     }
-                    broadcastMsg("Successfully changed resolution to " + args[1] + "!");
                     return true;
                 case "video":
                     path = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
@@ -219,6 +223,10 @@ public class Display extends JavaPlugin{
                         videoPlays = true;
                         startMapVideo();
                     }
+                    return true;
+                case "tp":
+                    teleportPlayer((Player) sender);
+                    return true;
                 default:
                     break;
             }
@@ -251,6 +259,11 @@ public class Display extends JavaPlugin{
                 Bukkit.broadcastMessage(ChatColor.DARK_RED + "[Display] " + ChatColor.RED + msg);
             }
         });
+    }
+    
+    private void teleportPlayer(Player player){
+        Location location = new Location(world, w/2, (w+h)/2/4, h/2, -180, 90);
+        player.teleport(location);
     }
     
     private void drawImageMap(String path, Player player){
