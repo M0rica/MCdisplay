@@ -100,8 +100,21 @@ public class BlockColor{
         new ColorBlock(Material.CRIMSON_PLANKS, 101, 49, 71),
         new ColorBlock(Material.WARPED_PLANKS, 43, 105, 99),
         
-        
+        // stones
         new ColorBlock(Material.STONE, 119, 119, 119),
+        new ColorBlock(Material.COBBLESTONE, 128, 127, 128),
+        new ColorBlock(Material.MOSSY_COBBLESTONE, 110, 118, 95),
+        new ColorBlock(Material.SMOOTH_STONE, 159, 159, 159),
+        
+        // andesite etc.
+        new ColorBlock(Material.ANDESITE, 136, 136, 137),
+        new ColorBlock(Material.POLISHED_ANDESITE, 132, 135, 134),
+        
+        new ColorBlock(Material.DIORITE, 189, 189, 189),
+        new ColorBlock(Material.POLISHED_DIORITE, 193, 193, 195),
+        
+        new ColorBlock(Material.GRANITE, 149, 103, 86),
+        new ColorBlock(Material.POLISHED_GRANITE, 154, 107, 89),
         };
     }
     
