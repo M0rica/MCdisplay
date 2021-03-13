@@ -36,7 +36,7 @@ MCdisplay is a modern and fast Bukkit plugin for rendering any image or video fr
     Videos are handled a little diffrently than images. Images get rendered and instantly displayed while videos will be first rendered completely frame-by-frame. This is to enable video playback of up to 20fps, Minecrafts limit for placing blocks.
     There will be a message in the chat when your video is ready and will start playing, it takes about 30 seconds to render a 5 minute video in 20fps (at 128x72), so you don't have to wait too long!
     Videos have a maximum resolution of 256 in heigth as they get display vertically instead of horizontally as images, this is to reduce the amount of chunks that have to be updated each frame.
-    Videos also just play in **full 20fps at 128x72 or lower**, as there are too many chunk updates for Minecraft to perform in time in higher resolutions which results in laggy frames or frames that just donÄt get rendered completely.
+    Videos also just play in **full 20fps at 128x72 or lower**, as there are too many chunk updates for Minecraft to perform in time in higher resolutions which results in laggy frames or frames that just don't get rendered completely.
     The plugin will automatically resize the display for videos if they are too big and also automatically detects what framerate to use.
   ### Pause a video
   You can pause a video playing by typing `/display pause` and resume it ba typing `/display pause` again.
