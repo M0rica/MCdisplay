@@ -5,10 +5,16 @@
  */
 package display;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import static java.lang.Math.sqrt;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import org.bukkit.Material;
 /**
@@ -43,6 +49,7 @@ public class BlockColor{
         }
     }
     
+    String colormapName;
     ColorBlock[] blocks;
     Material lastMaterial = Material.BLACK_CONCRETE;
     float lastR, lastG, lastB = 0;
@@ -51,10 +58,17 @@ public class BlockColor{
     
     public BlockColor(){
         
+        try{
+            loadColormap("latest");
+        } catch(Exception e){
+            e.printStackTrace();
+        }
         //lastBlock = new ColorBlock(Material.BLACK_CONCRETE, 50, 50, 50);
         //new ColorBlock(Material., 0, 0, 0),
+
+        /*blocks = new ColorBlock[]{
+            
         // concrete
-        blocks = new ColorBlock[]{
         new ColorBlock(Material.BLACK_CONCRETE, 10, 12, 17),
         new ColorBlock(Material.WHITE_CONCRETE, 207, 213, 214),
         new ColorBlock(Material.ORANGE_CONCRETE, 224, 97, 1),
@@ -90,6 +104,25 @@ public class BlockColor{
         new ColorBlock(Material.GREEN_WOOL, 85, 110, 28),
         new ColorBlock(Material.RED_WOOL, 161, 39, 35),
         
+        // terracotta
+        new ColorBlock(Material.TERRACOTTA, 152, 94, 68),
+        new ColorBlock(Material.BLACK_TERRACOTTA, 37, 23, 16),
+        new ColorBlock(Material.BLUE_TERRACOTTA, 74, 60, 91),
+        new ColorBlock(Material.BROWN_TERRACOTTA, 77, 51, 36),
+        new ColorBlock(Material.CYAN_TERRACOTTA, 87, 91, 91),
+        new ColorBlock(Material.GRAY_TERRACOTTA, 58, 42, 36),
+        new ColorBlock(Material.GREEN_TERRACOTTA, 76, 83, 42),
+        new ColorBlock(Material.LIGHT_BLUE_TERRACOTTA, 113, 109, 138),
+        new ColorBlock(Material.LIGHT_GRAY_TERRACOTTA, 135, 107, 98),
+        new ColorBlock(Material.LIME_TERRACOTTA, 104, 118, 53),
+        new ColorBlock(Material.MAGENTA_TERRACOTTA, 150, 88, 109),
+        new ColorBlock(Material.ORANGE_TERRACOTTA, 162, 84, 38),
+        new ColorBlock(Material.PINK_TERRACOTTA, 162, 78, 79),
+        new ColorBlock(Material.PURPLE_TERRACOTTA, 118, 70, 86),
+        new ColorBlock(Material.RED_TERRACOTTA, 143, 61, 47),
+        new ColorBlock(Material.WHITE_TERRACOTTA, 210, 178, 161),
+        new ColorBlock(Material.YELLOW_TERRACOTTA, 186, 133, 35),
+        
         // wood
         new ColorBlock(Material.OAK_PLANKS, 162, 131, 79),
         new ColorBlock(Material.SPRUCE_PLANKS, 115, 85, 49),
@@ -115,7 +148,41 @@ public class BlockColor{
         
         new ColorBlock(Material.GRANITE, 149, 103, 86),
         new ColorBlock(Material.POLISHED_GRANITE, 154, 107, 89),
-        };
+        };*/
+    }
+    
+    public void loadColormap(String colormap) throws FileNotFoundException, IOException{
+        BufferedReader br = new BufferedReader(new FileReader(String.format("plugins/MCdisplay/colormaps/%s.txt", colormap)));
+        try {
+            String colorData;
+            List<String[]> allData = new ArrayList<String[]>();
+            while((colorData = br.readLine()) != null){
+                if(colorData.equals("") || colorData.startsWith("//")){
+                    continue;
+                }
+                allData.add(colorData.split(", "));
+                System.out.println(colorData);
+            }
+            blocks = new ColorBlock[allData.size()];
+            int i = 0;
+            for(String[] data: allData){
+                System.out.println("=========");
+                for(String s: data){
+                    System.out.println(s);
+                }
+                blocks[i] = new ColorBlock(Material.matchMaterial(data[0]), Float.valueOf(data[1]), Float.valueOf(data[2]), Float.valueOf(data[3]));
+                i++;
+            }
+            colormapName = colormap;
+        } catch(Exception e){
+            e.printStackTrace();
+        } finally {
+            br.close();
+        }
+    }
+    
+    public String getName(){
+        return colormapName;
     }
     
     public void clearCache(){
@@ -123,10 +190,6 @@ public class BlockColor{
     }
     
     public Material matchColor(float[] color){
-        //color = 16777216 - color;
-        //int r =   (color & 0x00ff0000) >> 16;
-        //int g = (color & 0x0000ff00) >> 8;
-        //int b =   color & 0x000000ff;
         float r = color[0];
         float g = color[1];
         float b = color[2];
@@ -160,10 +223,6 @@ public class BlockColor{
             }
         }
         
-        //lastMaterial = matchedMaterial;
-        //lastR = r;
-        //lastG = g;
-        //lastB = b;
         cache.put(colors, matchedMaterial);
         return matchedMaterial;
     }

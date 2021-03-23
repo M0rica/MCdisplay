@@ -18,11 +18,11 @@ import org.bukkit.util.StringUtil;
  *
  * @author M0rica
  */
-public class DisplayTabExecuter implements TabExecutor{
+public class MapDisplayTabExecuter implements TabExecutor{
     
-    Display plugin;
+    MapDisplay plugin;
     
-    public DisplayTabExecuter(Display p){
+    public MapDisplayTabExecuter(MapDisplay p){
         plugin = p;
     }
     
@@ -33,8 +33,6 @@ public class DisplayTabExecuter implements TabExecutor{
         
         if(args.length == 1){
             
-            commands.add("on");
-            commands.add("off");
             commands.add("image");
             commands.add("video");
             commands.add("replay");
@@ -42,9 +40,8 @@ public class DisplayTabExecuter implements TabExecutor{
             commands.add("stop");
             commands.add("resolution");
             commands.add("start");
-            commands.add("tp");
-            commands.add("colormap");
             StringUtil.copyPartialMatches(args[0], commands, completions);
+            
         } else if(args.length == 2){
             switch (args[0]) {
                 case "resolution":
@@ -58,29 +55,22 @@ public class DisplayTabExecuter implements TabExecutor{
                     commands.add("1024x576");
                     break;
                 case "image":
-                {
-                    File[] folder = new File("plugins/MCdisplay/image").listFiles();
-                    for(File f: folder){
-                        if(f.isFile()){
-                            commands.add(f.getName());
-                        }
+                    {
+                        File[] folder = new File("plugins/MCdisplay/image").listFiles();
+                        for(File f: folder){
+                            if(f.isFile()){
+                                commands.add(f.getName());
+                            }
+                        }       break;
                     }
-                }
                 case "video":
-                {
-                    File[] folder = new File("plugins/MCdisplay/video").listFiles();
-                    for(File f: folder){
-                        if(f.isFile()){
-                            commands.add(f.getName());
-                        }
-                    }
-                }
-                case "colormap":
-                    File[] folder = new File("plugins/MCdisplay/colormaps").listFiles();
-                    for(File f: folder){
-                        if(f.isFile()){
-                            commands.add(f.getName().split("\\.")[0]);
-                        }
+                    {
+                        File[] folder = new File("plugins/MCdisplay/video").listFiles();
+                        for(File f: folder){
+                            if(f.isFile()){
+                                commands.add(f.getName());
+                            }
+                        }       break;
                     }
                 default:
                     break;
