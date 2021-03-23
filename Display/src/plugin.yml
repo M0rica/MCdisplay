@@ -1,11 +1,15 @@
 ## YAML Template.
 name: MCdisplay
 main: display.Display
-version: 0.4-alpha.4
+version: 0.4-alpha.5
 api-version: 1.16
 author: M0rica
 website: https://github.com/M0rica/MCdisplay
 commands:
     display:
         description:
-        usage: "Usage: /display [on/off/image/video/replay/pause/stop]"
+        usage: "Usage: /display [on/off/image/video/replay/pause/stop/colormap]"
+    
+    mapdisplay:
+        description:
+        usage: "Usage: /mapdisplay [image/video/start/pause]"
