@@ -16,6 +16,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.logging.Logger;
 import org.bukkit.Material;
 /**
  *
@@ -55,9 +56,11 @@ public class BlockColor{
     float lastR, lastG, lastB = 0;
     CIELab colorConv = new CIELab();
     HashMap<List<Float>, Material> cache = new HashMap<>();
+    Logger log;
     
-    public BlockColor(){
+    public BlockColor(Logger l){
         
+        log = l;
         try{
             loadColormap("latest");
         } catch(Exception e){
@@ -152,6 +155,7 @@ public class BlockColor{
     }
     
     public void loadColormap(String colormap) throws FileNotFoundException, IOException{
+        log.info(String.format("Attempting to load colormap \"%s\"", colormap));
         BufferedReader br = new BufferedReader(new FileReader(String.format("plugins/MCdisplay/colormaps/%s.txt", colormap)));
         try {
             String colorData;
@@ -161,19 +165,22 @@ public class BlockColor{
                     continue;
                 }
                 allData.add(colorData.split(", "));
-                System.out.println(colorData);
             }
-            blocks = new ColorBlock[allData.size()];
+            ColorBlock[] temp = new ColorBlock[allData.size()];
             int i = 0;
+            log.info("Processing colormap data");
             for(String[] data: allData){
-                System.out.println("=========");
-                for(String s: data){
-                    System.out.println(s);
+                try {
+                    temp[i] = new ColorBlock(Material.matchMaterial(data[0]), Float.valueOf(data[1]), Float.valueOf(data[2]), Float.valueOf(data[3]));
+                    i++;
+                } catch(Exception e){
+                    log.warning("Incorrect color data: " + String.join(" ", data));
                 }
-                blocks[i] = new ColorBlock(Material.matchMaterial(data[0]), Float.valueOf(data[1]), Float.valueOf(data[2]), Float.valueOf(data[3]));
-                i++;
             }
+            blocks = temp;
             colormapName = colormap;
+            log.info(String.format("Sucessfully loaded colormap \"%s\"", colormap));
+            
         } catch(Exception e){
             e.printStackTrace();
         } finally {

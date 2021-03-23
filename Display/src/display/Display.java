@@ -79,7 +79,7 @@ public class Display extends JavaPlugin{
     public void onEnable(){
         log.info("Rendering backend: " + backend_path);
         world = Bukkit.getWorlds().get(0);
-        colormap = new BlockColor();
+        colormap = new BlockColor(log);
         mapdisplay = new MapDisplay(this, (Plugin)this, log, world);
         TabExecutor tabExecutor = new DisplayTabExecuter(this);
         TabExecutor tabExecutorMap = new MapDisplayTabExecuter(mapdisplay);
@@ -215,7 +215,7 @@ public class Display extends JavaPlugin{
                                 broadcastMsg("Changed colormap to " + args[1]);
                             } catch(Exception e){
                                 e.printStackTrace();
-                                broadcastErr("An error occurred while trying to load colormap " + args[1]);
+                                broadcastErr(String.format("An error occurred while trying to load colormap \"%s\"", args[1]));
                             }
                         } else {
                             broadcastMsg("Current colormap: " + colormap.getName());

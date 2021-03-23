@@ -35,7 +35,6 @@ public class MapDisplayTabExecuter implements TabExecutor{
             
             commands.add("image");
             commands.add("video");
-            commands.add("replay");
             commands.add("pause");
             commands.add("stop");
             commands.add("resolution");
@@ -49,10 +48,6 @@ public class MapDisplayTabExecuter implements TabExecutor{
                     commands.add("256x144");
                     commands.add("384x216");
                     commands.add("512x288");
-                    commands.add("640x360");
-                    commands.add("768x432");
-                    commands.add("896x504");
-                    commands.add("1024x576");
                     break;
                 case "image":
                     {

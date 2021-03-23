@@ -64,7 +64,7 @@ public class DisplayTabExecuter implements TabExecutor{
                         if(f.isFile()){
                             commands.add(f.getName());
                         }
-                    }
+                    } break;
                 }
                 case "video":
                 {
@@ -73,7 +73,7 @@ public class DisplayTabExecuter implements TabExecutor{
                         if(f.isFile()){
                             commands.add(f.getName());
                         }
-                    }
+                    } break;
                 }
                 case "colormap":
                     File[] folder = new File("plugins/MCdisplay/colormaps").listFiles();

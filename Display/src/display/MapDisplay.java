@@ -38,8 +38,8 @@ public class MapDisplay {
     World world;
     Display display;
     
-    int w = 256;
-    int h = 144;
+    int w = 128;
+    int h = 72;
     
     int frames;
     int videoFrame;
@@ -94,6 +94,8 @@ public class MapDisplay {
                 if(videoPrepared && !videoPlays){
                     videoPlays = true;
                     startMapVideo();
+                } else {
+                    display.broadcastMsg("There is no video to play, to play one typ \"/mapdisplay video <yourVideo>\" and then run this command again.");
                 }
                 return true;
             case "pause":
@@ -109,20 +111,19 @@ public class MapDisplay {
             case "stop":
                 try{
                     videoFrame = frames;
+                    isPaused = false;
                 } catch(Exception e) {
-
-                }
-                return true;
-            case "replay":
-                if(videoPrepared && !videoPlays){
-                    path = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
-                    drawVideoMap(path, (Player) sender, true);
+                    e.printStackTrace();
                 }
                 return true;
             case "resolution":
                 if(!videoPlays){
-                    changeResolution(args[1]);
-                    display.broadcastMsg("Successfully changed resolution for mapdisplay to " + args[1] + "!");
+                    if(args.length == 1){
+                        display.broadcastMsg(String.format("Current map resolution: %dx%d", w, h));
+                    } else {
+                        changeResolution(args[1]);
+                        display.broadcastMsg("Successfully changed resolution for mapdisplay to " + args[1]);
+                    }
                 }
                 return true;
         }       
@@ -366,7 +367,6 @@ public class MapDisplay {
     }
     
     private void startMapVideo(){
-        blockActions();
         videoFrame = 0;
         for(VideoMapRenderer r: videoMaps){
             r.start();
@@ -395,7 +395,6 @@ public class MapDisplay {
                     for(VideoMapRenderer r: videoMaps){
                         r.setFinished(true);
                     }
-                    unblockActions();
                 }
             }
         }, 100L, 1L);

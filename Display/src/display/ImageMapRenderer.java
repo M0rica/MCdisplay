@@ -15,7 +15,7 @@ import org.bukkit.map.MapView;
 
 /**
  *
- * @author Der Gerät
+ * @author M0rica
  */
 public class ImageMapRenderer extends MapRenderer{
     
@@ -33,7 +33,7 @@ public class ImageMapRenderer extends MapRenderer{
         if(rendered){
             return;
         }
-        System.out.println("Render");
+        System.out.println("Rendering image");
         mc.drawImage(0, 0, (Image) img);
         rendered = true;
     }
