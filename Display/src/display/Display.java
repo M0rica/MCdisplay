@@ -283,13 +283,13 @@ public class Display extends JavaPlugin{
     
     private void drawImage(String path){
         broadcastMsg("Rendering image " + path);
+        if(vertical){
+            despawnDisplay();
+            vertical = false;
+        }
         Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable(){
             @Override
             public void run(){
-                if(vertical){
-                    despawnDisplay();
-                    vertical = false;
-                }
                 long start = System.currentTimeMillis();
                 log.info(String.format("Start rendering new image: %s", path));
                 Runtime rt = Runtime.getRuntime();
