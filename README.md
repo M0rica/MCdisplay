@@ -1,13 +1,17 @@
 # MCdisplay
 MCdisplay is a modern and fast Bukkit plugin for rendering any image or video from your drive in a 1:1 scale to a display of blocks in Minecraft!
 
+<a href="http://www.youtube.com/watch?feature=player_embedded&v=UIgyJUaSbSA
+" target="_blank"><img src="http://img.youtube.com/vi/UIgyJUaSbSA/sddefault.jpg" 
+title="MCdisplay playing a video YouTube tech-demo" width="640" height="480" border="10" /></a>
+
 ## Features
 
   * display any image or video on a variable resolution screen
     * you can change the resolution of the screen, your image or video will automatically get scaled to the right size to fit the screen!
   * render to a display of blocks or to maps  
     * 1 pixel = 1 block
-    * block display supports 41 colors/blocks (for now, I will add more in future updates!)
+    * block display supports many colors/blocks (I will add more in future updates!)
   * play videos at 20fps!
   * fast rendering in the background, so as few laggs as possible
   * tab completion that shows you your saved images and videos
@@ -47,8 +51,13 @@ MCdisplay is a modern and fast Bukkit plugin for rendering any image or video fr
   ### Change resolution
   Changing resolution is as simple as typing `/display resolution <width>x<height>`, the plugin will suggest you some 16:9 resolutions you can select so you don't have to look them up. You can change to any resolution and aspect resolution, though I wouldn't recommend going higher than 1280x720 (as this is almost the limit of chunks you can see at once even with optiFine).
     The screen will despawn and then spawn again which can lagg the server for a few seconds. Your videos and images will automatically get scaled to the highest resolution possible to fit your current resolution and aspect ratio.
+  ### Center camera
+  You can center your view by using the command `/display tp` wich will automatically teleport you to the center of the display and to the right heigt.
   ### Turn display on/off
   You can spawn/despan the display by typing `/display <on/off>`, that will either spawn or remove the display in the current resolution.
+## Mapdisplay
+  The mapdisplay command supports every command of the normal display except for `/display <on/off>` and `/display tp`
+  If the resolution is higher than 128x128, you will get multiple maps placed into your inventory wich have numbers in the format `column_row` on them, place them in the right order on a surface in item frames.
 
 ## Development
   For development, you need a Java 8 JDK as well as python. Clone this repository to your machine and then install the python requirements via `pip install -r requirements.txt` from the root of this project.
