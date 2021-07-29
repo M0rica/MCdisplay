@@ -9,7 +9,6 @@ import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
 import java.io.File;
 import java.io.FileReader;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.logging.Logger;
 import javax.imageio.ImageIO;
@@ -18,27 +17,15 @@ import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.Server;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
-import org.bukkit.entity.ArmorStand;
-import org.bukkit.entity.FallingBlock;
 import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.inventory.meta.MapMeta;
-import org.bukkit.map.MapRenderer;
-import org.bukkit.map.MapView;
-import org.bukkit.material.MaterialData;
-import org.bukkit.map.MapPalette;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.util.Vector;
 
-import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
@@ -158,6 +145,7 @@ public class Display extends JavaPlugin{
                             if(!vertical){
                                 despawnDisplay();
                                 vertical = true;
+                                spawnDisplay();
                             }
                             broadcastMsg("Preparing video " + path + ", may take a while!");
                             Bukkit.getScheduler().runTaskAsynchronously(this, new Runnable() {
@@ -259,11 +247,20 @@ public class Display extends JavaPlugin{
         });
     }
     
+    public void broadcastWarn(String msg){
+        Bukkit.getScheduler().runTask(this, new Runnable(){
+            @Override
+            public void run(){
+                Bukkit.broadcastMessage(ChatColor.YELLOW + "[Display] Warning: " + ChatColor.GOLD + msg);
+            }
+        });
+    }
+    
     public void broadcastErr(String msg){
         Bukkit.getScheduler().runTask(this, new Runnable(){
             @Override
             public void run(){
-                Bukkit.broadcastMessage(ChatColor.DARK_RED + "[Display] " + ChatColor.RED + msg);
+                Bukkit.broadcastMessage(ChatColor.DARK_RED + "[Display] Error: " + ChatColor.RED + msg);
             }
         });
     }
@@ -298,10 +295,14 @@ public class Display extends JavaPlugin{
                     Process pr = rt.exec(String.format("%s \"plugins/MCdisplay/image/%s\" %dx%d", backend_path, path, w, h));
                     log.info(String.format("%s \"plugins/MCdisplay/image/%s\" %dx%d", backend_path, path, w, h));
                     int p = pr.waitFor();
-                    log.info("Reading resized image " + path);
-                    File f = new File("plugins/MCdisplay/resized/" + path);
+                    String readPath = path;
+                    if(path.endsWith(".webp")){
+                        readPath = path.split("\\.")[0] + ".jpg";
+                    }
+                    log.info("Reading resized image " + readPath);
+                    File f = new File("plugins/MCdisplay/resized/" + readPath);
                     BufferedImage img = ImageIO.read(f);
-                    log.info("Colormapping " + path);
+                    log.info("Colormapping " + readPath);
                     Material[][] pixels = new Material[w][h];
                     for(int i = 0; i < w; i++){
                         for(int j = 0; j < h; j++){
@@ -309,7 +310,7 @@ public class Display extends JavaPlugin{
                         }
                     }
                     colormap.clearCache();
-                    log.info(String.format("Rendering image %s to display", path));
+                    log.info(String.format("Rendering image %s to display", readPath));
                     
                     renderImage(pixels);
                     log.info(String.format("Rendering time: %dms", System.currentTimeMillis() - start));
@@ -400,7 +401,7 @@ public class Display extends JavaPlugin{
                 ticks = 2L;
             }
             broadcastMsg("Starting video in 5s");
-            mapdisplay.unblockActions();
+            //mapdisplay.unblockActions();
             this.videoID = Bukkit.getScheduler().scheduleSyncRepeatingTask(this, new Runnable() {
             @Override
             public void run() {
@@ -412,6 +413,7 @@ public class Display extends JavaPlugin{
                         videoPlays = false;
                         videoFrame = 0;
                         isVideoPlaying = false;
+                        mapdisplay.unblockActions();
                         broadcastMsg("Done playing video");
                     }
                     try{
@@ -469,7 +471,12 @@ public class Display extends JavaPlugin{
                 }
             }
             videoFrame++;
-            log.info(String.format("Time taken for frame #%d: %dms", videoFrame, System.currentTimeMillis()-start));
+            long timeTaken = System.currentTimeMillis()-start;
+            String infoString = String.format("Time taken for frame #%d: %dms", videoFrame, timeTaken);
+            log.info(infoString);
+            if(timeTaken > 6){
+                broadcastWarn(infoString);
+            }
         }
     }
     
