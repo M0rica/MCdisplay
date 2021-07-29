@@ -17,7 +17,10 @@ def resize_image(img: Image, resolution: tuple):
 
 def resize_image_from_disk(path: str, resolution: tuple):
     img = resize_image(Image.open(path), resolution)
-    img.save(f'{dir_path}/resized/{path.split("/")[-1]}')
+    if path.endswith('.webp'):
+        img.save(f'{dir_path}/resized/{path.split("/")[-1].split(".")[0]}.jpg')
+    else:
+        img.save(f'{dir_path}/resized/{path.split("/")[-1]}')
     print("Saved")
 
 def resize_video(path: str, resolution: tuple, target_fps):
