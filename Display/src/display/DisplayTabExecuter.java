@@ -43,6 +43,7 @@ public class DisplayTabExecuter implements TabExecutor{
             commands.add("resolution");
             commands.add("start");
             commands.add("tp");
+            commands.add("center");
             commands.add("colormap");
             StringUtil.copyPartialMatches(args[0], commands, completions);
         } else if(args.length == 2){

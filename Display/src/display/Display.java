@@ -5,10 +5,18 @@
  */
 package display;
 
+import java.awt.Graphics2D;
+import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferByte;
+import java.io.BufferedInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.FileReader;
+import java.io.InputStream;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.Arrays;
 import java.util.logging.Logger;
 import javax.imageio.ImageIO;
@@ -37,6 +45,7 @@ import org.json.simple.parser.JSONParser;
 public class Display extends JavaPlugin{
     
     String backend_path = "python plugins/MCdisplay/resize.py";
+    String base_path = "plugins/MCdisplay";
     
     Logger log = this.getLogger();
     int w = 256;
@@ -66,6 +75,7 @@ public class Display extends JavaPlugin{
     public void onEnable(){
         log.info("Rendering backend: " + backend_path);
         world = Bukkit.getWorlds().get(0);
+        checkDirs();
         colormap = new BlockColor(log);
         mapdisplay = new MapDisplay(this, (Plugin)this, log, world);
         TabExecutor tabExecutor = new DisplayTabExecuter(this);
@@ -78,7 +88,6 @@ public class Display extends JavaPlugin{
     }
     
     public void onDisable(){
-        //despawnDisplay();
         log.info("Plugin disabled");
     }
     
@@ -96,7 +105,7 @@ public class Display extends JavaPlugin{
                     return true;
                 case "image":
                     String path = String.join(" ", Arrays.copyOfRange(args, 1, args.length));
-                    if(doesFileExists("image/" + path)){
+                    if(isURL(path) || doesFileExists("image/" + path)){
                         if(!videoPlays){
                             drawImage(path);
                         } else {
@@ -210,7 +219,7 @@ public class Display extends JavaPlugin{
                         }
                     }
                     return true;
-                case "tp":
+                case "tp": case "center":
                     teleportPlayer((Player) sender);
                     return true;
                 default:
@@ -220,6 +229,20 @@ public class Display extends JavaPlugin{
             return mapdisplay.processCommand(sender, cmd, commandLabel, args);
         }
         return false;
+    }
+    
+    private void checkDirs(){
+        String[] dirs = new String[]{"image", "video", "downloads", "resized"};
+        for(String dir: dirs){
+            File directory = new File(String.format("%s/%s", base_path, dir));
+            if(!directory.exists()){
+                directory.mkdir();
+            }
+        }
+        File colormapDir = new File(String.format("%s/colormaps", base_path));
+        if(!colormapDir.exists()){
+            broadcastErr("No colormap directory found, you won't be able to render any image or video until you add a colormap!");
+        }
     }
     
     public void canRender(boolean b){
@@ -236,6 +259,46 @@ public class Display extends JavaPlugin{
             broadcastErr(String.format("The file %s does not exist!", file));
         }
         return isFile;
+    }
+    
+    private boolean isURL(String path){
+        return path.startsWith("https://") || path.startsWith("http://");
+    }
+    
+    public static BufferedImage toBufferedImage(Image img){
+        if (img instanceof BufferedImage)
+        {
+            return (BufferedImage) img;
+        }
+
+        // Create a buffered image with transparency
+        BufferedImage bimage = new BufferedImage(img.getWidth(null), img.getHeight(null), BufferedImage.TYPE_INT_ARGB);
+
+        // Draw the image on to the buffered image
+        Graphics2D bGr = bimage.createGraphics();
+        bGr.drawImage(img, 0, 0, null);
+        bGr.dispose();
+
+        // Return the buffered image
+        return bimage;
+    }
+    
+    private boolean downloadImg(String path){
+        broadcastMsg("Downloading image from " + path);
+        try{
+            URL url = new URL(path);
+            URLConnection connection = url.openConnection();
+            connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.131 Safari/537.36");
+            Image img = ImageIO.read(connection.getInputStream());
+            BufferedImage out = toBufferedImage(img);
+            ImageIO.write(out, "jpg", new File("plugins/MCdisplay/downloads/download.jpg"));
+            broadcastMsg("Download successful!");
+            return true;
+        } catch(Exception e){
+            e.printStackTrace();
+            broadcastErr("Failed to download image from given url!");
+            return false;
+        }
     }
     
     public void broadcastMsg(String msg){
@@ -279,7 +342,9 @@ public class Display extends JavaPlugin{
     }
     
     private void drawImage(String path){
-        broadcastMsg("Rendering image " + path);
+        if(!isURL(path)){
+            broadcastMsg("Rendering image " + path);
+        }
         if(vertical){
             despawnDisplay();
             vertical = false;
@@ -291,16 +356,26 @@ public class Display extends JavaPlugin{
                 log.info(String.format("Start rendering new image: %s", path));
                 Runtime rt = Runtime.getRuntime();
                 try{
-                    log.info("Resizing image");
-                    Process pr = rt.exec(String.format("%s \"plugins/MCdisplay/image/%s\" %dx%d", backend_path, path, w, h));
-                    log.info(String.format("%s \"plugins/MCdisplay/image/%s\" %dx%d", backend_path, path, w, h));
-                    int p = pr.waitFor();
                     String readPath = path;
+                    String prString = String.format("%s \"plugins/MCdisplay/image/%s\" %dx%d", backend_path, path, w, h);
+                    if(isURL(path)){
+                        boolean success = downloadImg(path);
+                        if(!success){
+                            return;
+                        }
+                        broadcastMsg("Rendering downloaded image");
+                        prString = String.format("%s \"plugins/MCdisplay/downloads/download.jpg\" %dx%d", backend_path, w, h);
+                        readPath = "plugins/MCdisplay/resized/download.jpg";
+                    }
+                    log.info("Resizing image");
+                    Process pr = rt.exec(prString);
+                    log.info(prString);
+                    int p = pr.waitFor();
                     if(path.endsWith(".webp")){
                         readPath = path.split("\\.")[0] + ".jpg";
                     }
-                    log.info("Reading resized image " + readPath);
-                    File f = new File("plugins/MCdisplay/resized/" + readPath);
+                    log.info("Reading resized image");
+                    File f = new File("plugins/MCdisplay/resized/resized.jpg");
                     BufferedImage img = ImageIO.read(f);
                     log.info("Colormapping " + readPath);
                     Material[][] pixels = new Material[w][h];
@@ -318,6 +393,7 @@ public class Display extends JavaPlugin{
                 }
                 catch (Exception e){
                     log.warning(String.valueOf(e));
+                    broadcastErr("Something went wrong, " + e.getMessage());
                 }
             }
         });
