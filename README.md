@@ -61,3 +61,5 @@ title="MCdisplay playing a video YouTube tech-demo" width="640" height="480" bor
 
 ## Development
   For development, you need a Java 8 JDK as well as python. Clone this repository to your machine and then install the python requirements via `pip install -r requirements.txt` from the root of this project.
+## Future Plans
+I'm currently working on a rewrite that implements all current features in pure Java (eliminating the external resize programm). This rewrite will also bring massive improvements in terms of code readability (the current code is a mess) and stability + bugfixes.
